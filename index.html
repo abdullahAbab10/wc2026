@@ -454,6 +454,148 @@ html[lang="ar"] .day-label { flex-direction: row-reverse; }
   border-radius: 0 0 2px 0;
   display: block;
 }
+
+/* ── LIVE RESULTS ───────────────────────────────────── */
+.live-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(8,28,16,0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+.live-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.live-dot.live { background: #4ADE80; animation: pulse 1.5s infinite; }
+.live-dot.error { background: var(--ember); }
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.8); }
+}
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(200,151,43,0.1);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold-hi);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.refresh-btn:hover { background: rgba(200,151,43,0.18); border-color: var(--gold); }
+.refresh-btn.spinning span { animation: spin 0.8s linear infinite; display: inline-block; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* Score injected into match cards */
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 8px;
+  white-space: nowrap;
+  min-width: 80px;
+}
+.score-badge.finished {
+  background: rgba(200,151,43,0.12);
+  border: 1px solid rgba(200,151,43,0.3);
+  color: var(--gold-hi);
+}
+.score-badge.live {
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.35);
+  color: #4ADE80;
+  animation: scorePulse 2s infinite;
+}
+.score-badge.upcoming {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--muted);
+  font-size: 16px;
+}
+@keyframes scorePulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+  50%      { box-shadow: 0 0 0 4px rgba(74,222,128,0.12); }
+}
+.score-badge .live-label {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #4ADE80;
+  display: block;
+  text-align: center;
+  line-height: 1;
+  margin-top: 1px;
+}
+.score-badge .minute-label {
+  font-size: 10px;
+  font-family: "Barlow Condensed", sans-serif;
+  color: #4ADE80;
+  display: block;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+/* Goal scorers line */
+.goal-scorers {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+  font-style: italic;
+  line-height: 1.4;
+}
+.goal-scorers .goal-icon { color: var(--gold-dim); }
+
+/* Match row status colour */
+.matches-table tr.match-finished td:nth-child(1) {
+  border-left: 2px solid rgba(200,151,43,0.3);
+}
+.matches-table tr.match-live td:nth-child(1) {
+  border-left: 2px solid rgba(74,222,128,0.6);
+}
+html[lang="ar"] .matches-table tr.match-finished td:nth-child(1) {
+  border-left: none; border-right: 2px solid rgba(200,151,43,0.3);
+}
+html[lang="ar"] .matches-table tr.match-live td:nth-child(1) {
+  border-left: none; border-right: 2px solid rgba(74,222,128,0.6);
+}
+
+/* Mobile score in card */
+@media(max-width:720px){
+  .score-badge { font-size: 20px; padding: 3px 12px; }
+  .goal-scorers { font-size: 10px; }
+}
+
 </style>
 </head>
 <body>
@@ -644,6 +786,18 @@ html[lang="ar"] .day-label { flex-direction: row-reverse; }
     <button class="toggle-btn" id="btn-s2" aria-label="Toggle">&#9662;</button>
   </div>
   <div class="section-body" id="body-s2">
+<!-- Live Results Bar -->
+<div class="live-bar" id="liveBar">
+  <div class="live-status">
+    <div class="live-dot" id="liveDot"></div>
+    <span id="liveStatusText">Tap refresh to load latest results</span>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="fetchResults()">
+    <span id="refreshIcon">↻</span>
+    <span id="t-refresh-label">Load Results</span>
+  </button>
+</div>
+
 <div class="legend">
   <span class="legend-hdr" id="t-legend">Legend</span>
   <div class="legend-item"><div class="legend-dot dot-normal"></div> Normal kick-off</div>
@@ -1511,6 +1665,184 @@ function toggleSection(id) {
   var collapsed = body.classList.toggle('collapsed');
   if (btn) btn.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
 }
+
+// ═══════════════════════════════════════════════════════════
+//  LIVE RESULTS — openfootball/worldcup.json (no API key)
+// ═══════════════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════
+//  LIVE RESULTS — openfootball/worldcup.json
+// ══════════════════════════════════════════════
+
+var RESULTS_CACHE = null;
+var LAST_FETCH    = 0;
+
+
+// ── API CONFIG ────────────────────────────────────────────
+// football-data.org: free tier, CORS-enabled, no key needed for basic data
+// World Cup 2026 competition ID = 2000
+// CORS proxy for openfootball as fallback
+var FDORG_URL   = "https://api.football-data.org/v4/competitions/2000/matches";
+var FDORG_KEY   = "";  // paste your free key from football-data.org here (optional but increases limit)
+var PROXY_URL   = "https://corsproxy.io/?url=" + encodeURIComponent("https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json");
+var USING_PROXY = false;
+
+
+function fetchResults() {
+  if (Date.now() - LAST_FETCH < 15000 && RESULTS_CACHE) { applyResults(RESULTS_CACHE); return; }
+  setLiveStatus("loading");
+
+  // Try football-data.org first (CORS-enabled)
+  var headers = {"X-Auth-Token": FDORG_KEY || "anonymous"};
+  fetch(FDORG_URL, {headers: headers})
+    .then(function(r) {
+      if (!r.ok) throw new Error("fdorg " + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      RESULTS_CACHE = normalizeFDOrg(data);
+      LAST_FETCH = Date.now();
+      applyResults(RESULTS_CACHE);
+      setLiveStatus("ok");
+      USING_PROXY = false;
+    })
+    .catch(function() {
+      // Fallback: corsproxy.io wrapping openfootball
+      fetch(PROXY_URL)
+        .then(function(r) { if (!r.ok) throw new Error("proxy " + r.status); return r.json(); })
+        .then(function(data) {
+          RESULTS_CACHE = data;
+          LAST_FETCH = Date.now();
+          applyResults(RESULTS_CACHE);
+          setLiveStatus("ok");
+          USING_PROXY = true;
+        })
+        .catch(function() { setLiveStatus("error"); });
+    });
+}
+
+// Normalize football-data.org format to openfootball-like format
+function normalizeFDOrg(data) {
+  if (!data || !data.matches) return {matches: []};
+  var matches = data.matches.map(function(m) {
+    var homeScore = m.score && m.score.fullTime && m.score.fullTime.home;
+    var awayScore = m.score && m.score.fullTime && m.score.fullTime.away;
+    var htHome    = m.score && m.score.halfTime  && m.score.halfTime.home;
+    var htAway    = m.score && m.score.halfTime  && m.score.halfTime.away;
+    var finished  = m.status === "FINISHED";
+    var live      = m.status === "IN_PLAY" || m.status === "PAUSED";
+    var result = {
+      team1: m.homeTeam ? m.homeTeam.name : "",
+      team2: m.awayTeam ? m.awayTeam.name : "",
+      date:  m.utcDate ? m.utcDate.split("T")[0] : "",
+      time:  m.utcDate ? m.utcDate.split("T")[1].slice(0,5) : "",
+      isLive: live,
+      minute: m.minute || null
+    };
+    if (finished && homeScore !== null && homeScore !== undefined) {
+      result.score = { ft: [homeScore, awayScore] };
+      if (htHome !== null && htHome !== undefined) {
+        result.score.ht = [htHome, htAway];
+      }
+    } else if (live) {
+      result.score = null;
+      result.isLive = true;
+      if (homeScore !== null && homeScore !== undefined) {
+        result.liveScore = [homeScore, awayScore];
+      }
+    }
+    return result;
+  });
+  return {matches: matches};
+}
+
+function setLiveStatus(state) {
+  var dot=document.getElementById('liveDot');
+  var txt=document.getElementById('liveStatusText');
+  var btn=document.getElementById('refreshBtn');
+  var lbl=document.getElementById('t-refresh-label');
+  if (!dot) return;
+  var isAR = (LANG === 'ar');
+  if (state === 'loading') {
+    dot.className='live-dot';
+    txt.textContent = isAR ? 'جاري التحديث…' : 'Fetching results…';
+    btn.classList.add('spinning');
+    lbl.textContent = isAR ? 'تحديث' : 'Refreshing…';
+  } else if (state === 'ok') {
+    dot.className='live-dot live';
+    var t=new Date();
+    txt.textContent = (isAR ? 'آخر تحديث: ' : 'Last updated: ') + t.getHours() + ':' + ('0'+t.getMinutes()).slice(-2) + ' AST';
+    btn.classList.remove('spinning');
+    lbl.textContent = isAR ? 'تحديث' : 'Refresh';
+  } else {
+    dot.className='live-dot error';
+    txt.textContent = isAR ? 'تعذّر التحديث' : 'Failed to fetch — check connection';
+    btn.classList.remove('spinning');
+    lbl.textContent = isAR ? 'إعادة محاولة' : 'Retry';
+  }
+}
+
+function normTeam(str) {
+  if (!str) return '';
+  return str.toString().toLowerCase().replace(/[^a-z]/g,'');
+}
+
+function applyResults(data) {
+  if (!data || !data.matches) return;
+  data.matches.forEach(function(m) {
+    var t1 = normTeam(m.team1 ? (m.team1.name||m.team1.id||m.team1) : '');
+    var t2 = normTeam(m.team2 ? (m.team2.name||m.team2.id||m.team2) : '');
+    if (!t1 || !t2) return;
+    var rows = document.querySelectorAll('.matches-table tr');
+    for (var i=0; i<rows.length; i++) {
+      var el = rows[i].querySelector('.match-teams');
+      if (!el) continue;
+      var src = normTeam(el.getAttribute('data-en') || el.textContent || '');
+      if (src.indexOf(t1) === -1 || src.indexOf(t2) === -1) continue;
+      injectScore(rows[i], m);
+      break;
+    }
+  });
+}
+
+function injectScore(row, m) {
+  var cells = row.querySelectorAll("td");
+  if (!cells[1]) return;
+  var score=m.score; var state="upcoming"; var ft=null; var ht=null;
+  if (m.isLive) {
+    state="live";
+    if (m.liveScore) ft=m.liveScore;
+  } else if (score) {
+    state="finished"; ft=score.ft; ht=score.ht;
+  } else if (m.date) {
+    var koff = new Date(m.date+"T"+(m.time||"00:00")+"Z").getTime();
+    var now=Date.now();
+    if (!isNaN(koff) && now>koff && now<koff+7200000) state="live";
+  }
+  row.classList.remove("match-finished","match-live");
+  if (state==="finished") row.classList.add("match-finished");
+  if (state==="live") row.classList.add("match-live");
+  var h="";
+  if (state==="finished" && ft) {
+    h="<div class=\"score-badge finished\">"+ft[0]+" – "+ft[1]+"</div>";
+    if (ht) h+="<div style=\"font-size:10px;color:var(--muted);text-align:center;margin-top:2px\">HT "+ht[0]+"–"+ht[1]+"</div>";
+    var goals=[];
+    if (m.goals1) m.goals1.forEach(function(g){ goals.push("⚽ "+(g.name||"")+" "+g.minute+"'"); });
+    if (m.goals2) m.goals2.forEach(function(g){ goals.push("⚽ "+(g.name||"")+" "+g.minute+"'"); });
+    if (goals.length) h+="<div class=\"goal-scorers\">"+goals.join("<br>")+"</div>";
+  } else if (state==="live") {
+    h="<div class=\"score-badge live\">"+(ft ? ft[0]+" – "+ft[1] : "● LIVE")+"</div>";
+  } else {
+    h="<div class=\"score-badge upcoming\">— : —</div>";
+  }
+  cells[1].innerHTML=h;
+}
+
+window.addEventListener('load', function() { fetchResults(); });
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && Date.now()-LAST_FETCH>60000) fetchResults();
+});
 </script>
 </body>
 </html>
