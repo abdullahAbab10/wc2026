@@ -1680,81 +1680,109 @@ var LAST_FETCH    = 0;
 
 
 // ── API CONFIG ────────────────────────────────────────────
-// football-data.org: free tier, CORS-enabled, no key needed for basic data
-// World Cup 2026 competition ID = 2000
-// CORS proxy for openfootball as fallback
-var FDORG_URL   = "https://api.football-data.org/v4/competitions/2000/matches";
-var FDORG_KEY   = "";  // paste your free key from football-data.org here (optional but increases limit)
-var PROXY_URL   = "https://corsproxy.io/?url=" + encodeURIComponent("https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json");
-var USING_PROXY = false;
+// 3 sources tried in order — first one that works wins
+var SOURCES = [
+  // 1. Dedicated free WC2026 API — no key, no CORS issues
+  { url: "https://worldcup26.ir/get/games", type: "wc26ir" },
+  // 2. corsproxy wrapping openfootball (updated daily by hand)
+  { url: "https://corsproxy.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fopenfootball%2Fworldcup.json%2Fmaster%2F2026%2Fworldcup.json", type: "openfootball" },
+  // 3. football-data.org (needs free API key for matches endpoint)
+  { url: "https://api.football-data.org/v4/competitions/WC/matches", type: "fdorg",
+    headers: { "X-Auth-Token": "" } }
+];
+var SOURCE_IDX = 0;
 
 
 function fetchResults() {
   if (Date.now() - LAST_FETCH < 15000 && RESULTS_CACHE) { applyResults(RESULTS_CACHE); return; }
   setLiveStatus("loading");
+  trySource(0);
+}
 
-  // Try football-data.org first (CORS-enabled)
-  var headers = {"X-Auth-Token": FDORG_KEY || "anonymous"};
-  fetch(FDORG_URL, {headers: headers})
+function trySource(idx) {
+  if (idx >= SOURCES.length) { setLiveStatus("error"); return; }
+  var src = SOURCES[idx];
+  var opts = src.headers ? { headers: src.headers } : {};
+  fetch(src.url, opts)
     .then(function(r) {
-      if (!r.ok) throw new Error("fdorg " + r.status);
+      if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     })
     .then(function(data) {
-      RESULTS_CACHE = normalizeFDOrg(data);
+      var normalized = normalizeData(data, src.type);
+      if (!normalized || !normalized.matches || normalized.matches.length === 0) throw new Error("empty");
+      RESULTS_CACHE = normalized;
       LAST_FETCH = Date.now();
+      SOURCE_IDX = idx;
       applyResults(RESULTS_CACHE);
       setLiveStatus("ok");
-      USING_PROXY = false;
     })
-    .catch(function() {
-      // Fallback: corsproxy.io wrapping openfootball
-      fetch(PROXY_URL)
-        .then(function(r) { if (!r.ok) throw new Error("proxy " + r.status); return r.json(); })
-        .then(function(data) {
-          RESULTS_CACHE = data;
-          LAST_FETCH = Date.now();
-          applyResults(RESULTS_CACHE);
-          setLiveStatus("ok");
-          USING_PROXY = true;
-        })
-        .catch(function() { setLiveStatus("error"); });
+    .catch(function(e) {
+      console.log("Source " + idx + " failed:", e.message, "- trying next");
+      trySource(idx + 1);
     });
 }
 
-// Normalize football-data.org format to openfootball-like format
-function normalizeFDOrg(data) {
-  if (!data || !data.matches) return {matches: []};
-  var matches = data.matches.map(function(m) {
-    var homeScore = m.score && m.score.fullTime && m.score.fullTime.home;
-    var awayScore = m.score && m.score.fullTime && m.score.fullTime.away;
-    var htHome    = m.score && m.score.halfTime  && m.score.halfTime.home;
-    var htAway    = m.score && m.score.halfTime  && m.score.halfTime.away;
-    var finished  = m.status === "FINISHED";
-    var live      = m.status === "IN_PLAY" || m.status === "PAUSED";
-    var result = {
-      team1: m.homeTeam ? m.homeTeam.name : "",
-      team2: m.awayTeam ? m.awayTeam.name : "",
-      date:  m.utcDate ? m.utcDate.split("T")[0] : "",
-      time:  m.utcDate ? m.utcDate.split("T")[1].slice(0,5) : "",
-      isLive: live,
-      minute: m.minute || null
-    };
-    if (finished && homeScore !== null && homeScore !== undefined) {
-      result.score = { ft: [homeScore, awayScore] };
-      if (htHome !== null && htHome !== undefined) {
-        result.score.ht = [htHome, htAway];
+// Normalize any API format into our internal format
+function normalizeData(data, type) {
+  // worldcup26.ir format: array of game objects OR {games:[...]}
+  if (type === "wc26ir") {
+    var games = Array.isArray(data) ? data : (data.games || data.matches || []);
+    var matches = games.map(function(g) {
+      var result = {
+        team1: g.home_team || g.homeTeam || g.team1 || "",
+        team2: g.away_team || g.awayTeam || g.team2 || "",
+        date:  g.date || g.match_date || "",
+        time:  g.time || g.match_time || ""
+      };
+      var hs = g.home_score !== undefined ? g.home_score : (g.homeScore !== undefined ? g.homeScore : null);
+      var as = g.away_score !== undefined ? g.away_score : (g.awayScore !== undefined ? g.awayScore : null);
+      var status = (g.status || g.match_status || "").toUpperCase();
+      if (status === "FINISHED" || status === "FT" || status === "COMPLETED") {
+        if (hs !== null) result.score = { ft: [hs, as] };
+      } else if (status === "LIVE" || status === "IN_PLAY" || status === "1H" || status === "2H") {
+        result.isLive = true;
+        if (hs !== null) result.liveScore = [hs, as];
       }
-    } else if (live) {
-      result.score = null;
-      result.isLive = true;
-      if (homeScore !== null && homeScore !== undefined) {
-        result.liveScore = [homeScore, awayScore];
+      return result;
+    });
+    return { matches: matches };
+  }
+
+  // openfootball format: {matches:[...]} with score.ft
+  if (type === "openfootball") {
+    return data; // already in correct format
+  }
+
+  // football-data.org format
+  if (type === "fdorg") {
+    if (!data || !data.matches) return { matches: [] };
+    var matches = data.matches.map(function(m) {
+      var hs = m.score && m.score.fullTime ? m.score.fullTime.home : null;
+      var as = m.score && m.score.fullTime ? m.score.fullTime.away : null;
+      var hht = m.score && m.score.halfTime ? m.score.halfTime.home : null;
+      var hat = m.score && m.score.halfTime ? m.score.halfTime.away : null;
+      var finished = m.status === "FINISHED";
+      var live = m.status === "IN_PLAY" || m.status === "PAUSED";
+      var result = {
+        team1: m.homeTeam ? m.homeTeam.name : "",
+        team2: m.awayTeam ? m.awayTeam.name : "",
+        date:  m.utcDate ? m.utcDate.split("T")[0] : "",
+        time:  m.utcDate ? m.utcDate.split("T")[1].slice(0,5) : "",
+        isLive: live
+      };
+      if (finished && hs !== null) {
+        result.score = { ft: [hs, as] };
+        if (hht !== null) result.score.ht = [hht, hat];
+      } else if (live && hs !== null) {
+        result.liveScore = [hs, as];
       }
-    }
-    return result;
-  });
-  return {matches: matches};
+      return result;
+    });
+    return { matches: matches };
+  }
+
+  return { matches: [] };
 }
 
 function setLiveStatus(state) {
