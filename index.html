@@ -1680,15 +1680,17 @@ var LAST_FETCH    = 0;
 
 
 // ── API CONFIG ────────────────────────────────────────────
-// 3 sources tried in order — first one that works wins
+// The openfootball JSON is the most reliable free source for WC data
+// We wrap it in multiple CORS proxies — first one that responds wins
+var OFB_URL = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
+
 var SOURCES = [
-  // 1. Dedicated free WC2026 API — no key, no CORS issues
-  { url: "https://worldcup26.ir/get/games", type: "wc26ir" },
-  // 2. corsproxy wrapping openfootball (updated daily by hand)
-  { url: "https://corsproxy.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fopenfootball%2Fworldcup.json%2Fmaster%2F2026%2Fworldcup.json", type: "openfootball" },
-  // 3. football-data.org (needs free API key for matches endpoint)
-  { url: "https://api.football-data.org/v4/competitions/WC/matches", type: "fdorg",
-    headers: { "X-Auth-Token": "" } }
+  // These are all CORS proxies wrapping the same openfootball data
+  { url: "https://api.allorigins.win/raw?url=" + encodeURIComponent(OFB_URL), type: "openfootball" },
+  { url: "https://corsproxy.io/?url=" + encodeURIComponent(OFB_URL), type: "openfootball" },
+  { url: "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(OFB_URL), type: "openfootball" },
+  // TheStatsAPI free fixtures JSON (no key needed, CORS-enabled)
+  { url: "https://www.thestatsapi.com/world-cup/data/fixtures.json", type: "thestatsapi" }
 ];
 var SOURCE_IDX = 0;
 
@@ -1782,6 +1784,32 @@ function normalizeData(data, type) {
     return { matches: matches };
   }
 
+  // thestatsapi.com free fixtures format
+  if (type === "thestatsapi") {
+    var arr = Array.isArray(data) ? data : (data.fixtures || data.matches || data.data || []);
+    var matches = arr.map(function(g) {
+      var ht = g.home_team || g.homeTeam || {};
+      var at = g.away_team || g.awayTeam || {};
+      var result = {
+        team1: ht.name || ht || "",
+        team2: at.name || at || "",
+        date:  (g.kickoff || g.utcDate || g.date || "").split("T")[0],
+        time:  (g.kickoff || g.utcDate || g.date || "").split("T")[1] ? (g.kickoff || g.utcDate || g.date || "").split("T")[1].slice(0,5) : ""
+      };
+      var status = (g.status || "").toUpperCase();
+      var hs = g.home_score !== undefined ? g.home_score : (g.score && g.score.home !== undefined ? g.score.home : null);
+      var as2 = g.away_score !== undefined ? g.away_score : (g.score && g.score.away !== undefined ? g.score.away : null);
+      if ((status === "FINISHED" || status === "FT") && hs !== null) {
+        result.score = { ft: [hs, as2] };
+      } else if (status === "IN_PLAY" || status === "LIVE") {
+        result.isLive = true;
+        if (hs !== null) result.liveScore = [hs, as2];
+      }
+      return result;
+    });
+    return { matches: matches };
+  }
+
   return { matches: [] };
 }
 
@@ -1811,9 +1839,34 @@ function setLiveStatus(state) {
   }
 }
 
+// Team name aliases — maps API names to our HTML names
+var TEAM_ALIASES = {
+  "korearepublic": "southkorea",
+  "republicofkorea": "southkorea",
+  "korea": "southkorea",
+  "czech": "czechia",
+  "czechrepublic": "czechia",
+  "bosniaandherzegovina": "bosniaherzegovina",
+  "bosniaherzegovina": "bosniaherzegovina",
+  "ivorycoast": "ivorycoast",
+  "cotedivoire": "ivorycoast",
+  "turkiye": "turkiye",
+  "turkey": "turkiye",
+  "unitedstates": "usa",
+  "unitedstatesofamerica": "usa",
+  "newzealand": "newzealand",
+  "drcongo": "drcongo",
+  "congodr": "drcongo",
+  "democraticrepublicofthecongo": "drcongo",
+  "capeverde": "capeverde",
+  "curacao": "curacao",
+  "southafrica": "southafrica"
+};
+
 function normTeam(str) {
   if (!str) return '';
-  return str.toString().toLowerCase().replace(/[^a-z]/g,'');
+  var n = str.toString().toLowerCase().replace(/[^a-z]/g,'');
+  return TEAM_ALIASES[n] || n;
 }
 
 function applyResults(data) {
