@@ -147,7 +147,7 @@ html[lang="ar"] .late-badge{font-family:"Cairo",sans-serif;font-size:10px;}
 .matches-table tr.match-live td:nth-child(1){border-left:2px solid rgba(74,222,128,0.6);}
 /* MATCH DETAIL PANEL */
 .matches-table tr{cursor:pointer;}
-.match-expand-icon{position:absolute;bottom:6px;right:8px;font-size:9px;color:var(--muted);letter-spacing:1px;font-family:"Barlow Condensed",sans-serif;opacity:0.5;transition:opacity 0.2s;pointer-events:none;}
+.match-expand-icon{position:absolute;top:8px;right:8px;font-size:9px;color:var(--muted);letter-spacing:1px;font-family:"Barlow Condensed",sans-serif;opacity:0.5;transition:opacity 0.2s,color 0.2s;pointer-events:none;}
 .match-expand-icon.open{opacity:1;color:var(--gold);}
 .match-detail-row td{padding:0!important;border:none!important;}
 .match-detail-panel{overflow:hidden;max-height:0;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1);background:rgba(5,16,10,0.97);border-top:1px solid rgba(200,151,43,0.15);}
@@ -236,6 +236,28 @@ html[lang="ar"] .timeline-event.away{flex-direction:row;text-align:left;}
   .groups-grid{grid-template-columns:1fr;}
   .hero-title{font-size:28px;}
 }
+
+/* ── GOAL SCORERS — two column layout ── */
+.goal-scorers-wrap{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;}
+.goal-team{display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--muted);flex:1;}
+.goal-team-label{font-family:"Barlow Condensed",sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1px;}
+.home-goals{text-align:left;}.away-goals{text-align:right;}
+
+/* ── DETAIL SCORERS SECTION ── */
+.detail-scorers{margin-bottom:12px;}
+.detail-scorers-title{font-family:"Barlow Condensed",sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:8px;}
+.detail-scorers-row{display:grid;grid-template-columns:1fr 1px 1fr;gap:0;align-items:start;}
+.scorer-divider{background:rgba(200,151,43,0.15);width:1px;margin:0 8px;}
+.scorer-col{display:flex;flex-direction:column;gap:4px;}
+.home-col{text-align:left;padding-right:8px;}
+.away-col{text-align:right;padding-left:8px;}
+.scorer-entry{font-size:12px;color:var(--text);line-height:1.4;}
+.scorer-min{font-family:"Bebas Neue",sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;}
+.scorer-assist{font-size:10px;color:var(--muted);font-style:italic;}
+.scorer-none{color:var(--muted);font-style:italic;font-size:11px;}
+html[lang="ar"] .home-col{text-align:right;padding-right:0;padding-left:8px;}
+html[lang="ar"] .away-col{text-align:left;padding-left:0;padding-right:8px;}
+
 </style>
 </head>
 <body>
@@ -409,7 +431,7 @@ html[lang="ar"] .timeline-event.away{flex-direction:row;text-align:left;}
     <thead><tr><th data-key="match">Match &amp; Venue</th><th data-key="time">AST Time</th><th data-key="grp">Grp</th></tr></thead>
     <tbody><tr>
   <td><div class="match-teams">🇶🇦 Qatar <span class="vs">vs</span> 🇨🇭 Switzerland</div>
-  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi’s Stadium</span></div></td>
+  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi Stadium</span></div></td>
   <td><span class="time-cell">22:00</span></td>
   <td><span class="group-tag">B</span></td>
 </tr><tr>
@@ -502,7 +524,7 @@ html[lang="ar"] .timeline-event.away{flex-direction:row;text-align:left;}
   <td><span class="group-tag">J</span></td>
 </tr><tr>
   <td><div class="match-teams">🇦🇹 Austria <span class="vs">vs</span> 🇯🇴 Jordan</div>
-  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi’s Stadium</span></div></td>
+  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi Stadium</span></div></td>
   <td><span class="time-cell late">07:00 <small>(Wed 18 Jun)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">J</span></td>
 </tr></tbody>
@@ -580,7 +602,7 @@ html[lang="ar"] .timeline-event.away{flex-direction:row;text-align:left;}
   <td><span class="group-tag">C</span></td>
 </tr><tr>
   <td><div class="match-teams">🇹🇷 Türkiye <span class="vs">vs</span> 🇵🇾 Paraguay</div>
-  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi’s Stadium</span></div></td>
+  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi Stadium</span></div></td>
   <td><span class="time-cell late">07:00 <small>(Sat 21 Jun)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">D</span></td>
 </tr></tbody>
@@ -658,7 +680,7 @@ html[lang="ar"] .timeline-event.away{flex-direction:row;text-align:left;}
   <td><span class="group-tag">I</span></td>
 </tr><tr>
   <td><div class="match-teams">🇯🇴 Jordan <span class="vs">vs</span> 🇩🇿 Algeria</div>
-  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi’s Stadium</span></div></td>
+  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi Stadium</span></div></td>
   <td><span class="time-cell late">06:00 <small>(Tue 24 Jun)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">J</span></td>
 </tr></tbody>
@@ -756,7 +778,7 @@ html[lang="ar"] .timeline-event.away{flex-direction:row;text-align:left;}
   <td><span class="group-tag">D</span></td>
 </tr><tr>
   <td><div class="match-teams">🇵🇾 Paraguay <span class="vs">vs</span> 🇦🇺 Australia</div>
-  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi’s Stadium</span></div></td>
+  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi Stadium</span></div></td>
   <td><span class="time-cell late">05:00 <small>(Fri 27 Jun)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">D</span></td>
 </tr></tbody>
@@ -920,7 +942,7 @@ html[lang="ar"] .timeline-event.away{flex-direction:row;text-align:left;}
     <thead><tr><th data-key="match">Match &amp; Venue</th><th data-key="time">AST Time</th><th data-key="rnd">Rnd</th></tr></thead>
     <tbody><tr>
   <td><div class="match-teams"> Winner Group G <span class="vs">vs</span>  Best 3rd A/E/H/I/J</div>
-  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi’s Stadium</span></div></td>
+  <div class="match-venue">📍 San Francisco · <span class="match-stadium">Levi Stadium</span></div></td>
   <td><span class="time-cell late">03:00 <small>(Thu 3 Jul)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="ko-tag ko-r32">Round of 32</span></td>
 </tr><tr>
@@ -1369,10 +1391,19 @@ function injectScore(row,m){
   if(state==='finished'&&ft){
     h='<div class="score-badge finished">'+ft[0]+' – '+ft[1]+'</div>';
     if(ht)h+='<div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">HT '+ht[0]+'–'+ht[1]+'</div>';
-    var goals=[];
-    if(m.goals1)m.goals1.forEach(function(g){goals.push('⚽ '+(g.name||'')+' '+g.minute+"'");});
-    if(m.goals2)m.goals2.forEach(function(g){goals.push('⚽ '+(g.name||'')+' '+g.minute+"'");});
-    if(goals.length)h+='<div class="goal-scorers">'+goals.join('<br>')+'</div>';
+    var g1=[],g2=[];
+    if(m.goals1)m.goals1.forEach(function(g){g1.push(g.name+(g.minute?" "+g.minute+"'":""));});
+    if(m.goals2)m.goals2.forEach(function(g){g2.push(g.name+(g.minute?" "+g.minute+"'":""));});
+    if(g1.length||g2.length){
+      h+='<div class="goal-scorers-wrap">';
+      if(g1.length)h+='<div class="goal-team home-goals"><span class="goal-team-label">'+
+        (m.homeTeam?m.homeTeam.name:'Home')+'</span>'+
+        g1.map(function(n){return'<span>⚽ '+n+'</span>';}).join('')+'</div>';
+      if(g2.length)h+='<div class="goal-team away-goals"><span class="goal-team-label">'+
+        (m.awayTeam?m.awayTeam.name:'Away')+'</span>'+
+        g2.map(function(n){return'<span>⚽ '+n+'</span>';}).join('')+'</div>';
+      h+='</div>';
+    }
   }else if(state==='live'){
     h='<div class="score-badge live">'+(ft?ft[0]+' – '+ft[1]:'● LIVE')+'</div>';
   }else{
@@ -1477,7 +1508,51 @@ function renderDetail(container,m){
   events.sort(function(a,b){return(a.min+a.extra*0.1)-(b.min+b.extra*0.1);});
   var h=buildHeader(home,away,hs,as2,ht?[ht.home,ht.away]:null,isFin,isLive);
   if(events.length>0){
-    h+='<div class="detail-timeline"><div class="detail-timeline-title">Match Events</div>';
+    // ── Scorers section (two columns: home left, away right) ──────────────────
+    var homeGoals=events.filter(function(e){return e.type==='goal'&&e.side==='home';});
+    var awayGoals=events.filter(function(e){return e.type==='goal'&&e.side==='away';});
+    var homeCards=events.filter(function(e){return(e.type==='red'||e.type==='yellow')&&e.side==='home';});
+    var awayCards=events.filter(function(e){return(e.type==='red'||e.type==='yellow')&&e.side==='away';});
+    if(homeGoals.length||awayGoals.length){
+      h+='<div class="detail-scorers">';
+      h+='<div class="detail-scorers-title">⚽ Goalscorers</div>';
+      h+='<div class="detail-scorers-row">';
+      // Home side
+      h+='<div class="scorer-col home-col">';
+      if(homeGoals.length){
+        homeGoals.forEach(function(g){
+          h+='<div class="scorer-entry">'+g.name+(g.assist?' <span class="scorer-assist">('+g.assist+')</span>':'')+' <span class="scorer-min">'+g.min+(g.extra?'+'+g.extra:'')+"'</span></div>";
+        });
+      }else{h+='<div class="scorer-entry scorer-none">—</div>';}
+      h+='</div>';
+      // Divider
+      h+='<div class="scorer-divider"></div>';
+      // Away side
+      h+='<div class="scorer-col away-col">';
+      if(awayGoals.length){
+        awayGoals.forEach(function(g){
+          h+='<div class="scorer-entry">'+g.name+(g.assist?' <span class="scorer-assist">('+g.assist+')</span>':'')+' <span class="scorer-min">'+g.min+(g.extra?'+'+g.extra:'')+"'</span></div>";
+        });
+      }else{h+='<div class="scorer-entry scorer-none">—</div>';}
+      h+='</div>';
+      h+='</div></div>';
+    }
+    // ── Cards section ──────────────────────────────────────────────────────────
+    if(homeCards.length||awayCards.length){
+      h+='<div class="detail-scorers">';
+      h+='<div class="detail-scorers-title">Cards</div>';
+      h+='<div class="detail-scorers-row">';
+      h+='<div class="scorer-col home-col">';
+      if(homeCards.length){homeCards.forEach(function(c){h+='<div class="scorer-entry">'+(c.type==='red'?'&#128997;':'&#129000;')+' '+c.name+' <span class="scorer-min">'+c.min+"'</span></div>";});}
+      else{h+='<div class="scorer-entry scorer-none">—</div>';}
+      h+='</div><div class="scorer-divider"></div>';
+      h+='<div class="scorer-col away-col">';
+      if(awayCards.length){awayCards.forEach(function(c){h+='<div class="scorer-entry">'+(c.type==='red'?'&#128997;':'&#129000;')+' '+c.name+' <span class="scorer-min">'+c.min+"'</span></div>";});}
+      else{h+='<div class="scorer-entry scorer-none">—</div>';}
+      h+='</div></div></div>';
+    }
+    // ── Full timeline ──────────────────────────────────────────────────────────
+    h+='<div class="detail-timeline"><div class="detail-timeline-title">Match Timeline</div>';
     events.forEach(function(ev){
       var icon=ev.type==='goal'?'⚽':ev.type==='red'?'<span class="evt-red">&#128997;</span>':'<span class="evt-yellow">&#129000;</span>';
       var minStr=ev.min+(ev.extra?'+'+ev.extra:'')+"'";
