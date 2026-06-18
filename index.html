@@ -1193,69 +1193,7 @@ function normTeam(str){
     capeverde:'capeverde',saudiarabia:'saudiarabia',curacao:'curacao',iriran:'iran'};
   return a[n]||n;
 }
-var HR=[
-  {t1:"Mexico",t2:"South Africa",hs:2,as:0,hth:1,hta:0,
-   s1:[{n:"Juli\u00e1n Qui\u00f1ones",m:"9"},{n:"Ra\u00fal Jim\u00e9nez",m:"67"}],s2:[]},
-  {t1:"South Korea",t2:"Czechia",hs:2,as:1,hth:0,hta:0,
-   s1:[{n:"Hwang In-Beom",m:"67"},{n:"Oh Hyeon-Gyu",m:"80"}],s2:[{n:"Ladislav Krej\u010d\u00ed",m:"59"}]},
-  {t1:"Canada",t2:"Bosnia and Herz.",hs:1,as:1,hth:0,hta:1,
-   s1:[{n:"Jonathan David",m:"71"}],s2:[{n:"Ermedin Demirovic",m:"38"}]},
-  {t1:"USA",t2:"Paraguay",hs:4,as:1,hth:1,hta:0,
-   s1:[{n:"Christian Pulisic",m:"23"},{n:"Gio Reyna",m:"58"},{n:"Josh Sargent",m:"72"},{n:"Weston McKennie",m:"88"}],
-   s2:[{n:"Antonio Sanabria",m:"61"}]},
-  {t1:"Qatar",t2:"Switzerland",hs:1,as:1,hth:0,hta:0,
-   s1:[{n:"Akram Afif",m:"54"}],s2:[{n:"Ruben Vargas",m:"71"}]},
-  {t1:"Brazil",t2:"Morocco",hs:1,as:1,hth:0,hta:0,
-   s1:[{n:"Vinicius Jr",m:"55"}],s2:[{n:"Azzedine Ounahi",m:"72"}]},
-  {t1:"Haiti",t2:"Scotland",hs:0,as:1,hth:0,hta:1,
-   s1:[],s2:[{n:"Scott McTominay",m:"33"}]},
-  {t1:"Australia",t2:"T\u00fcrkiye",hs:2,as:0,hth:1,hta:0,
-   s1:[{n:"Mitchell Duke",m:"12"},{n:"Mathew Leckie",m:"79"}],s2:[]},
-  {t1:"Germany",t2:"Cura\u00e7ao",hs:7,as:1,hth:3,hta:0,
-   s1:[{n:"Florian Wirtz",m:"8"},{n:"Kai Havertz",m:"22"},{n:"Jamal Musiala",m:"35"},{n:"Leroy Sane",m:"48"},{n:"Thomas M\u00fcller",m:"63"},{n:"Kai Havertz",m:"78"},{n:"Leroy Sane",m:"85"}],
-   s2:[{n:"Luciano Narsingh",m:"54"}]},
-  {t1:"Netherlands",t2:"Japan",hs:2,as:2,hth:1,hta:1,
-   s1:[{n:"Cody Gakpo",m:"14"},{n:"Memphis Depay",m:"71"}],
-   s2:[{n:"Takumi Minamino",m:"32"},{n:"Ritsu Doan",m:"88"}]},
-  {t1:"Ivory Coast",t2:"Ecuador",hs:1,as:0,hth:0,hta:0,
-   s1:[{n:"Sebastien Haller",m:"68"}],s2:[]},
-  {t1:"Sweden",t2:"Tunisia",hs:5,as:1,hth:1,hta:0,
-   s1:[{n:"Viktor Gyokeres",m:"9"},{n:"Alexander Isak",m:"34"},{n:"Viktor Gyokeres",m:"51"},{n:"Dejan Kulusevski",m:"67"},{n:"Viktor Gyokeres",m:"89"}],
-   s2:[{n:"Wahbi Khazri",m:"72"}]},
-  {t1:"Spain",t2:"Cape Verde",hs:0,as:0,hth:0,hta:0,s1:[],s2:[]},
-  {t1:"Egypt",t2:"Belgium",hs:1,as:1,hth:0,hta:0,
-   s1:[{n:"Omar Marmoush",m:"58"}],s2:[{n:"Romelu Lukaku",m:"34"}]},
-  {t1:"Saudi Arabia",t2:"Uruguay",hs:1,as:1,hth:0,hta:1,
-   s1:[{n:"Saleh Al-Shehri",m:"72"}],s2:[{n:"Darwin Nunez",m:"45"}]},
-  {t1:"Iran",t2:"New Zealand",hs:2,as:2,hth:1,hta:1,
-   s1:[{n:"Mehdi Taremi",m:"23"},{n:"Sardar Azmoun",m:"67"}],
-   s2:[{n:"Chris Wood",m:"41"},{n:"Joe Bell",m:"78"}]},
-  {t1:"France",t2:"Senegal",hs:3,as:1,hth:1,hta:1,
-   s1:[{n:"Kylian Mbappe",m:"38"},{n:"Antoine Griezmann",m:"56"},{n:"Marcus Thuram",m:"81"}],
-   s2:[{n:"Sadio Mane",m:"42"}]},
-  {t1:"Norway",t2:"Iraq",hs:4,as:1,hth:2,hta:0,
-   s1:[{n:"Erling Haaland",m:"12"},{n:"Martin Odegaard",m:"34"},{n:"Erling Haaland",m:"58"},{n:"Alexander Sorloth",m:"82"}],
-   s2:[{n:"Mohanad Ali",m:"71"}]},
-  {t1:"Argentina",t2:"Algeria",hs:3,as:0,hth:1,hta:0,
-   s1:[{n:"Lionel Messi",m:"28"},{n:"Julian Alvarez",m:"55"},{n:"Lautaro Martinez",m:"79"}],s2:[]},
-  {t1:"Austria",t2:"Jordan",hs:3,as:1,hth:1,hta:0,
-   s1:[{n:"Marcel Sabitzer",m:"22"},{n:"Christoph Baumgartner",m:"44"},{n:"Marko Arnautovic",m:"68"}],
-   s2:[{n:"Yazan Al-Naimat",m:"61"}]}
-];
-function applyHardcoded(){
-  HR.forEach(function(r){
-    var rows=document.querySelectorAll('.matches-table tr');
-    for(var i=0;i<rows.length;i++){
-      var el=rows[i].querySelector('.match-teams');
-      if(!el)continue;
-      var src=normTeam(el.getAttribute('data-en')||el.textContent||'');
-      if(src.indexOf(normTeam(r.t1))===-1||src.indexOf(normTeam(r.t2))===-1)continue;
-      injectScore(rows[i],{team1:r.t1,team2:r.t2,
-        score:{ft:[r.hs,r.as],ht:[r.hth,r.hta]},goals1:r.s1||[],goals2:r.s2||[]});
-      break;
-    }
-  });
-}
+// Scores loaded automatically from /data/results.json
 function injectScore(row,m){
   var cells=row.querySelectorAll('td');
   if(!cells[0])return;
@@ -1329,13 +1267,19 @@ function injectScore(row,m){
   if(m.goals1)m.goals1.forEach(function(g){var n=g.name||g.n||'';var mn=g.minute||g.m||'';if(n)g1.push({n:n,m:mn});});
   if(m.goals2)m.goals2.forEach(function(g){var n=g.name||g.n||'';var mn=g.minute||g.m||'';if(n)g2.push({n:n,m:mn});});
 
-  // Also collect red cards
+  // Collect red cards — supports both HR format (rc1/rc2) and API format (bookings)
   var r1=[],r2=[];
+  // HR format: rc1/rc2 arrays
+  if(m.rc1)m.rc1.forEach(function(r){if(r.n)r1.push(r);});
+  if(m.rc2)m.rc2.forEach(function(r){if(r.n)r2.push(r);});
+  // API format: bookings array from fdorg
   if(m.bookings){m.bookings.forEach(function(b){
     var nm=b.player?b.player.name:(b.name||b.n||'');var mn=b.minute||b.m||'';
     if(!nm)return;
     var isHome=(m.homeTeam&&b.team&&b.team.id===m.homeTeam.id);
-    if(b.card==='RED_CARD'){if(isHome)r1.push({n:nm,m:mn});else r2.push({n:nm,m:mn});}
+    if(b.card==='RED_CARD'||b.card==='YELLOW_RED_CARD'){
+      if(isHome)r1.push({n:nm,m:mn});else r2.push({n:nm,m:mn});
+    }
   });}
   var scorersHTML='';
   var hasContent=g1.length||g2.length||r1.length||r2.length;
@@ -1383,75 +1327,130 @@ function injectScore(row,m){
 }
 
 var MATCH_DATA={};
-var RESULTS_CACHE=null,LAST_FETCH=0,SOURCE_IDX=0;
-var API_KEY='a6e2d0ce5b074ef5b888f9069eb53074';
+var RESULTS_CACHE=null,LAST_FETCH=0,FETCH_TIMER=null;
 var OFB='https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
-var SOURCES=[
-  // fdorg with token — WC is free tier, CORS enabled
-  {url:'https://api.football-data.org/v4/competitions/WC/matches',type:'fdorg',
-   headers:{'X-Auth-Token':'a6e2d0ce5b074ef5b888f9069eb53074','X-Unfold-Goals':'true'}},
-  // fdorg numeric ID fallback
-  {url:'https://api.football-data.org/v4/competitions/2000/matches',type:'fdorg',
-   headers:{'X-Auth-Token':'a6e2d0ce5b074ef5b888f9069eb53074','X-Unfold-Goals':'true'}},
-  // openfootball via allorigins
-  {url:'https://api.allorigins.win/raw?url='+encodeURIComponent(OFB),type:'openfootball'},
-  // openfootball via corsproxy
-  {url:'https://corsproxy.io/?url='+encodeURIComponent(OFB),type:'openfootball'},
-  // openfootball via thingproxy
-  {url:'https://thingproxy.freeboard.io/fetch/'+OFB,type:'openfootball'},
-  // openfootball direct (may work on some devices/networks)
-  {url:OFB,type:'openfootball'}
-];
 
-function setLiveStatus(state){
+function setLiveStatus(state,extra){
   var dot=document.getElementById('liveDot'),txt=document.getElementById('liveStatusText');
   var btn=document.getElementById('refreshBtn'),lbl=document.getElementById('t-refresh-label');
   if(!dot)return;
   var isAR=LANG==='ar';
   if(state==='loading'){
     dot.className='live-dot';
-    txt.textContent=isAR?'\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u062f\u064a\u062b\u2026':'Fetching results\u2026';
+    txt.textContent=isAR?'جاري التحديث…':'Fetching results…';
     if(btn)btn.classList.add('spinning');
-    if(lbl)lbl.textContent=isAR?'\u062a\u062d\u062f\u064a\u062b':'Refreshing\u2026';
   }else if(state==='ok'){
     dot.className='live-dot live';
-    var t=new Date();
-    txt.textContent=(isAR?'\u0622\u062e\u0631 \u062a\u062d\u062f\u064a\u062b: ':'Last updated: ')+t.getHours()+':'+('0'+t.getMinutes()).slice(-2)+' AST';
+    var ago=extra||'';
+    txt.textContent=isAR?'تحديث تلقائي كل 5 دقائق — '+ago:'Auto-updates every 5 min — '+ago;
     if(btn)btn.classList.remove('spinning');
-    if(lbl)lbl.textContent=isAR?'\u062a\u062d\u062f\u064a\u062b':'Refresh';
+    if(lbl)lbl.textContent=isAR?'تحديث':'Refresh';
+  }else if(state==='live'){
+    dot.className='live-dot live';
+    txt.innerHTML='<span style="color:#4ADE80;font-weight:700">● LIVE</span> — '+(extra||'updating every 60s');
+    if(btn)btn.classList.remove('spinning');
   }else{
     dot.className='live-dot error';
-    txt.textContent=isAR?'\u062a\u0639\u0630\u0651\u0631 \u0627\u0644\u062a\u062d\u062f\u064a\u062b':'API unavailable \u2014 showing known results';
+    txt.textContent=isAR?'تعذّر التحديث — تحقق من الاتصال':'Could not fetch — check connection';
     if(btn)btn.classList.remove('spinning');
-    if(lbl)lbl.textContent=isAR?'\u0625\u0639\u0627\u062f\u0629 \u0645\u062d\u0627\u0648\u0644\u0629':'Retry';
+    if(lbl)lbl.textContent=isAR?'إعادة محاولة':'Retry';
   }
 }
 
-function fetchResults(){
-  if(Date.now()-LAST_FETCH<15000&&RESULTS_CACHE){applyResults(RESULTS_CACHE);return;}
-  setLiveStatus('loading');
-  trySource(0);
+function scheduleNext(hasLive){
+  if(FETCH_TIMER)clearTimeout(FETCH_TIMER);
+  FETCH_TIMER=setTimeout(fetchResults, hasLive?60000:300000);
 }
 
-function trySource(idx){
-  if(idx>=SOURCES.length){setLiveStatus('error');return;}
-  var src=SOURCES[idx],opts=src.headers?{headers:src.headers}:{};
-  fetch(src.url,opts)
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+function fetchResults(){
+  setLiveStatus('loading');
+  // Primary: /data/results.json on same domain — always works, no CORS
+  fetch('/data/results.json?_='+Date.now())
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
     .then(function(data){
-      if(src.type==='fdorg'){
-        if(data&&data.matches)data.matches.forEach(function(m){if(m.id)MATCH_DATA[m.id]=m;});
-      }else if(data&&data.matches){
-        data.matches.forEach(function(m){
-          MATCH_DATA['_'+normTeam(m.team1||'')+'_'+normTeam(m.team2||'')]=m;
-        });
-      }
-      var norm=normalizeData(data,src.type);
-      if(!norm||!norm.matches||norm.matches.length===0)throw new Error('empty');
-      RESULTS_CACHE=norm;LAST_FETCH=Date.now();SOURCE_IDX=idx;
-      applyResults(RESULTS_CACHE);setLiveStatus('ok');
+      processResults(data);
     })
-    .catch(function(e){console.warn('Source '+idx+' ('+src.url.slice(0,40)+') failed:',e.message);trySource(idx+1);});
+    .catch(function(){
+      // Fallback: try openfootball via proxies
+      tryProxy(0);
+    });
+}
+
+var PROXIES=[
+  'https://api.allorigins.win/raw?url='+encodeURIComponent(OFB),
+  'https://corsproxy.io/?url='+encodeURIComponent(OFB),
+  'https://thingproxy.freeboard.io/fetch/'+OFB
+];
+
+function tryProxy(idx){
+  if(idx>=PROXIES.length){setLiveStatus('error');scheduleNext(false);return;}
+  fetch(PROXIES[idx])
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+    .then(function(data){
+      // Wrap openfootball format to match our expected format
+      var matches=data.matches||[];
+      processResults({updated:new Date().toISOString(),matches:matches.map(function(m){
+        return{
+          team1:m.team1,team2:m.team2,
+          score:m.score?m.score.ft:null,
+          ht:m.score?m.score.ht:null,
+          goals1:m.goals1||[],goals2:m.goals2||[],
+          status:m.score&&m.score.ft?'FINISHED':'SCHEDULED',
+          live:false
+        };
+      })});
+    })
+    .catch(function(){tryProxy(idx+1);});
+}
+
+function processResults(data){
+  if(!data||!data.matches||!data.matches.length){setLiveStatus('error');scheduleNext(false);return;}
+  RESULTS_CACHE=data; LAST_FETCH=Date.now();
+
+  var hasLive=false, updatedAgo='';
+  if(data.updated){
+    var diff=Math.round((Date.now()-new Date(data.updated).getTime())/60000);
+    updatedAgo=diff<=1?'just now':diff+'min ago';
+  }
+
+  data.matches.forEach(function(m){
+    if(m.live)hasLive=true;
+    // Index by both team orderings for lookup
+    var k1=normTeam(m.team1)+'_'+normTeam(m.team2);
+    var k2=normTeam(m.team2)+'_'+normTeam(m.team1);
+    MATCH_DATA[k1]=m; MATCH_DATA[k2]=m;
+  });
+
+  applyResults(data.matches);
+  if(hasLive){setLiveStatus('live',updatedAgo);}
+  else{setLiveStatus('ok',updatedAgo);}
+  scheduleNext(hasLive);
+}
+
+function applyResults(matches){
+  matches.forEach(function(m){
+    if(!m.score)return; // not played yet
+    var rows=document.querySelectorAll('.matches-table tr');
+    for(var i=0;i<rows.length;i++){
+      var el=rows[i].querySelector('.match-teams');
+      if(!el)continue;
+      var src=el.getAttribute('data-en')||el.textContent||'';
+      var st1=normTeam(m.team1),st2=normTeam(m.team2);
+      if(src.toLowerCase().indexOf(st1)===-1&&src.toLowerCase().indexOf(normTeam(m.team1))===-1)continue;
+      if(src.toLowerCase().indexOf(st2)===-1&&src.toLowerCase().indexOf(normTeam(m.team2))===-1)continue;
+      // Map openfootball goals format {name,minute} → {n,m}
+      var g1=(m.goals1||[]).map(function(g){return{n:g.name||g.n,m:String(g.minute||g.m||'')};});
+      var g2=(m.goals2||[]).map(function(g){return{n:g.name||g.n,m:String(g.minute||g.m||'')};});
+      injectScore(rows[i],{
+        team1:m.team1,team2:m.team2,
+        score:{ft:m.score,ht:m.ht||null},
+        goals1:g1,goals2:g2,
+        rc1:m.rc1||[],rc2:m.rc2||[],
+        live:m.live,minute:m.minute,status:m.status
+      });
+      break;
+    }
+  });
 }
 
 function storeMatchData(data){
@@ -1570,9 +1569,13 @@ function renderDetail(container,m){
   });
   books.forEach(function(b){
     var side=(m.homeTeam&&b.team&&b.team.id===m.homeTeam.id)?'home':'away';
+    var card=b.card==='RED_CARD'||b.card==='YELLOW_RED_CARD'?'red':'yellow';
     events.push({min:b.minute||0,extra:b.minuteExtra||0,
-      type:b.card==='RED_CARD'?'red':'yellow',side:side,name:b.player?b.player.name:'Player'});
+      type:card,side:side,name:b.player?b.player.name:'Player'});
   });
+  // HR format red cards
+  if(m.rc1)m.rc1.forEach(function(r){events.push({min:parseInt(r.m)||0,extra:0,type:'red',side:'home',name:r.n});});
+  if(m.rc2)m.rc2.forEach(function(r){events.push({min:parseInt(r.m)||0,extra:0,type:'red',side:'away',name:r.n});});
   events.sort(function(a,b){return(a.min+a.extra*0.1)-(b.min+b.extra*0.1);});
 
   var h=buildHeader(home,away,hs,as2,htArr,isFin,isLive);
@@ -1656,7 +1659,7 @@ function initMatchRows(){
   }
 }
 
-window.addEventListener('load',function(){applyHardcoded();fetchResults();initMatchRows();});
+window.addEventListener('load',function(){fetchResults();initMatchRows();});
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-LAST_FETCH>60000)fetchResults();});
 </script>
 </body>
