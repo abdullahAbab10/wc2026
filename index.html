@@ -1434,10 +1434,12 @@ function applyResults(matches){
     for(var i=0;i<rows.length;i++){
       var el=rows[i].querySelector('.match-teams');
       if(!el)continue;
-      var src=el.getAttribute('data-en')||el.textContent||'';
+      var raw=(el.getAttribute('data-en')||el.textContent||'');
+      var parts=raw.split(/vs/i);
+      var srcH=normTeam(parts[0]||''),srcA=normTeam(parts[1]||'');
       var st1=normTeam(m.team1),st2=normTeam(m.team2);
-      if(src.toLowerCase().indexOf(st1)===-1&&src.toLowerCase().indexOf(normTeam(m.team1))===-1)continue;
-      if(src.toLowerCase().indexOf(st2)===-1&&src.toLowerCase().indexOf(normTeam(m.team2))===-1)continue;
+      if(srcH.indexOf(st1)===-1&&srcA.indexOf(st1)===-1)continue;
+      if(srcH.indexOf(st2)===-1&&srcA.indexOf(st2)===-1)continue;
       // Map openfootball goals format {name,minute} → {n,m}
       var g1=(m.goals1||[]).map(function(g){return{n:g.name||g.n,m:String(g.minute||g.m||'')};});
       var g2=(m.goals2||[]).map(function(g){return{n:g.name||g.n,m:String(g.minute||g.m||'')};});
