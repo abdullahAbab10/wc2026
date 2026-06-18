@@ -1202,7 +1202,7 @@ function toggleSection(id){
 var HR=[
   {t1:"Mexico",t2:"South Africa",hs:2,as:0,hth:1,hta:0},
   {t1:"South Korea",t2:"Czechia",hs:2,as:1,hth:0,hta:0},
-  {t1:"Canada",t2:"Bosnia &amp; Herz.",hs:1,as:1,hth:0,hta:1},
+  {t1:"Canada",t2:"Bosnia and Herz.",hs:1,as:1,hth:0,hta:1},
   {t1:"USA",t2:"Paraguay",hs:4,as:1,hth:1,hta:0},
   {t1:"Qatar",t2:"Switzerland",hs:1,as:1,hth:0,hta:0},
   {t1:"Brazil",t2:"Morocco",hs:1,as:1,hth:0,hta:0},
@@ -1224,8 +1224,28 @@ var HR=[
 
 function normTeam(str){
   if(!str)return'';
-  var n=str.toString().toLowerCase().replace(/[^a-z]/g,'');
-  var aliases={korearepublic:'southkorea',republicofkorea:'southkorea',korea:'southkorea',czech:'czechia',czechrepublic:'czechia',bosniaandherz:'bosniaherz',bosniaherz:'bosniaherz',cotedivoire:'ivorycoast',turkiye:'turkiye',turkey:'turkiye',unitedstates:'usa',unitedstatesofamerica:'usa',newzealand:'newzealand',drcongo:'drcongo',congodr:'drcongo',capeverde:'capeverde',saudiarabia:'saudiarabia'};
+  // Decode HTML entities and normalize accented chars
+  var s=str.toString()
+    .replace(/&amp;/g,'and').replace(/&[a-z]+;/g,'')
+    .replace(/ü/g,'u').replace(/ç/g,'c')
+    .replace(/é/g,'e').replace(/è/g,'e')
+    .replace(/à/g,'a').replace(/ñ/g,'n')
+    .replace(/★/g,'');
+  var n=s.toLowerCase().replace(/[^a-z]/g,'');
+  var aliases={
+    korearepublic:'southkorea',republicofkorea:'southkorea',korea:'southkorea',
+    czechrepublic:'czechia',
+    bosniaandherzegovina:'bosnia',bosniaandherz:'bosnia',bosniaherz:'bosnia',bosniaherzegovina:'bosnia',
+    cotedivoire:'ivorycoast',
+    turkiye:'turkiye',turkey:'turkiye',trkiye:'turkiye',
+    unitedstates:'usa',unitedstatesofamerica:'usa',
+    newzealand:'newzealand',
+    drcongo:'drcongo',congodr:'drcongo',democraticrepublicofthecongo:'drcongo',
+    capeverde:'capeverde',
+    saudiarabia:'saudiarabia',ksa:'saudiarabia',
+    curacao:'curacao',
+    ivorycoast:'ivorycoast'
+  };
   return aliases[n]||n;
 }
 
@@ -1250,9 +1270,14 @@ function applyHardcoded(){
 var RESULTS_CACHE=null,LAST_FETCH=0,SOURCE_IDX=0;
 var OFB='https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
 var SOURCES=[
+  // 1. football-data.org with token
   {url:'https://api.football-data.org/v4/competitions/WC/matches',type:'fdorg',headers:{'X-Auth-Token':'a6e2d0ce5b074ef5b888f9069eb53074'}},
+  // 2. allorigins proxy → openfootball JSON (free, updated daily)
   {url:'https://api.allorigins.win/raw?url='+encodeURIComponent(OFB),type:'openfootball'},
-  {url:'https://corsproxy.io/?url='+encodeURIComponent(OFB),type:'openfootball'}
+  // 3. corsproxy.io → openfootball
+  {url:'https://corsproxy.io/?url='+encodeURIComponent(OFB),type:'openfootball'},
+  // 4. thestatsapi free WC fixture feed
+  {url:'https://raw.githubusercontent.com/nicholasmartino/worldcup/master/2026/worldcup.json',type:'openfootball'}
 ];
 
 function setLiveStatus(state){
@@ -1262,7 +1287,7 @@ function setLiveStatus(state){
   var isAR=LANG==='ar';
   if(state==='loading'){dot.className='live-dot';txt.textContent=isAR?'جاري التحديث…':'Fetching results…';if(btn)btn.classList.add('spinning');if(lbl)lbl.textContent=isAR?'تحديث':'Refreshing…';}
   else if(state==='ok'){dot.className='live-dot live';var t=new Date();txt.textContent=(isAR?'آخر تحديث: ':'Last updated: ')+t.getHours()+':'+('0'+t.getMinutes()).slice(-2)+' AST';if(btn)btn.classList.remove('spinning');if(lbl)lbl.textContent=isAR?'تحديث':'Refresh';}
-  else{dot.className='live-dot error';txt.textContent=isAR?'تعذّر التحديث':'Failed to fetch — check connection';if(btn)btn.classList.remove('spinning');if(lbl)lbl.textContent=isAR?'إعادة محاولة':'Retry';}
+  else{dot.className='live-dot error';txt.textContent=isAR?'تعذّر التحديث — النتائج محدثة يدويًا':'API unavailable — showing known results';if(btn)btn.classList.remove('spinning');if(lbl)lbl.textContent=isAR?'إعادة محاولة':'Retry';}
 }
 
 function trySource(idx){
@@ -1476,6 +1501,12 @@ function renderFallback(container,row,home,away){
   var scoreEl=row.querySelector('.score-badge');
   var isFin=scoreEl&&scoreEl.classList.contains('finished');
   var isLive=scoreEl&&scoreEl.classList.contains('live');
+  // If no HR match but badge shows score, extract it
+  if(hs==='-'&&scoreEl&&isFin){
+    var badgeTxt=scoreEl.textContent.replace(/\s/g,'');
+    var parts=badgeTxt.split('\u2013');
+    if(parts.length===2){hs=parts[0].trim();as2=parts[1].trim();}
+  }
   var h=buildHeader(home,away,hs,as2,htArr,isFin,isLive);
   h+='<div class="detail-no-events">Tap Refresh above to load full match timeline</div>';
   container.innerHTML=h;
