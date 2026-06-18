@@ -1,0 +1,33 @@
+name: Update World Cup Scores
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update scores
+        run: |
+          curl -sf "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json" -o /tmp/wc.json || echo '{"matches":[]}' > /tmp/wc.json
+          mkdir -p data
+          node -e "
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('/tmp/wc.json'));
+          const out={updated:new Date().toISOString(),matches:[]};
+          for(const m of d.matches||[]){
+            const s=m.score||{};
+            out.matches.push({team1:m.team1,team2:m.team2,score:s.ft||null,ht:s.ht||null,goals1:m.goals1||[],goals2:m.goals2||[],status:s.ft?'FINISHED':'SCHEDULED',live:false});
+          }
+          fs.mkdirSync('data',{recursive:true});
+          fs.writeFileSync('data/results.json',JSON.stringify(out));
+          console.log('Done:',out.matches.length,'matches');
+          "
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/results.json
+          git diff --staged --quiet || git commit -m "update scores"
+          git push
