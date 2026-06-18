@@ -222,8 +222,8 @@ html[lang="ar"] .match-venue{text-align:right;}
   .match-detail-row td{display:block!important;width:100%!important;}
   .matches-table td{display:block;padding:0;width:100%!important;overflow:visible;border:none;}
   .matches-table td:nth-child(1){grid-area:info;padding:12px 14px 8px;border-bottom:1px solid rgba(200,151,43,0.08);}
-  .matches-table td:nth-child(2){grid-area:time;padding:8px 14px 10px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
-  .matches-table td:nth-child(3){grid-area:tag;padding:8px 14px 10px;display:flex;align-items:center;justify-content:flex-end;}
+  .matches-table td:nth-child(2){display:none!important;}
+  .matches-table td:nth-child(3){display:none!important;}
   .matches-table tr.match-finished{border-left:3px solid rgba(200,151,43,0.4);}
   .matches-table tr.match-live{border-left:3px solid rgba(74,222,128,0.6);}
   .match-teams{font-size:14px;font-weight:700;}
@@ -231,8 +231,8 @@ html[lang="ar"] .match-venue{text-align:right;}
   .group-tag{width:32px;height:32px;font-size:13px;}
   .ko-tag{font-size:11px;padding:4px 10px;}
   html[lang="ar"] .matches-table tr{grid-template-areas:"info info" "tag time";grid-template-columns:auto 1fr;direction:rtl;}
-  html[lang="ar"] .matches-table td:nth-child(3){justify-content:flex-start;}
-  html[lang="ar"] .matches-table td:nth-child(2){justify-content:flex-end;}
+
+
   html[lang="ar"] .match-teams{flex-direction:row-reverse;}
   html[lang="ar"] .match-venue{text-align:right;}
 }
@@ -1329,11 +1329,23 @@ function injectScore(row,m){
   if(m.goals1)m.goals1.forEach(function(g){var n=g.name||g.n||'';var mn=g.minute||g.m||'';if(n)g1.push({n:n,m:mn});});
   if(m.goals2)m.goals2.forEach(function(g){var n=g.name||g.n||'';var mn=g.minute||g.m||'';if(n)g2.push({n:n,m:mn});});
 
+  // Also collect red cards
+  var r1=[],r2=[];
+  if(m.bookings){m.bookings.forEach(function(b){
+    var nm=b.player?b.player.name:(b.name||b.n||'');var mn=b.minute||b.m||'';
+    if(!nm)return;
+    var isHome=(m.homeTeam&&b.team&&b.team.id===m.homeTeam.id);
+    if(b.card==='RED_CARD'){if(isHome)r1.push({n:nm,m:mn});else r2.push({n:nm,m:mn});}
+  });}
   var scorersHTML='';
-  if(g1.length||g2.length){
-    var c1=g1.map(function(g){return'<div class="card-scorer-item">\u26bd '+g.n+' <span class="scorer-min">'+g.m+"'</span></div>";}).join('');
-    var c2=g2.map(function(g){return'<div class="card-scorer-item">\u26bd '+g.n+' <span class="scorer-min">'+g.m+"'</span></div>";}).join('');
-    scorersHTML='<div class="card-scorers"><div class="card-scorer-col left">'+c1+'</div><div class="card-scorers-divider"></div><div class="card-scorer-col right">'+c2+'</div></div>';
+  var hasContent=g1.length||g2.length||r1.length||r2.length;
+  if(hasContent){
+    var col1='',col2='';
+    g1.forEach(function(g){col1+='<div class="card-scorer-item">\u26bd '+g.n+' <span class="scorer-min">'+g.m+"'</span></div>";});
+    r1.forEach(function(r){col1+='<div class="card-scorer-item" style="color:#EF4444">&#128997; '+r.n+' <span class="scorer-min">'+r.m+"'</span></div>";});
+    g2.forEach(function(g){col2+='<div class="card-scorer-item">\u26bd '+g.n+' <span class="scorer-min">'+g.m+"'</span></div>";});
+    r2.forEach(function(r){col2+='<div class="card-scorer-item" style="color:#EF4444">&#128997; '+r.n+' <span class="scorer-min">'+r.m+"'</span></div>";});
+    scorersHTML='<div class="card-scorers"><div class="card-scorer-col left">'+col1+'</div><div class="card-scorers-divider"></div><div class="card-scorer-col right">'+col2+'</div></div>';
   }
 
   // Venue text
@@ -1375,10 +1387,20 @@ var RESULTS_CACHE=null,LAST_FETCH=0,SOURCE_IDX=0;
 var API_KEY='a6e2d0ce5b074ef5b888f9069eb53074';
 var OFB='https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
 var SOURCES=[
-  {url:'https://api.football-data.org/v4/competitions/WC/matches',type:'fdorg',headers:{'X-Auth-Token':'a6e2d0ce5b074ef5b888f9069eb53074'}},
+  // fdorg with token — WC is free tier, CORS enabled
+  {url:'https://api.football-data.org/v4/competitions/WC/matches',type:'fdorg',
+   headers:{'X-Auth-Token':'a6e2d0ce5b074ef5b888f9069eb53074','X-Unfold-Goals':'true'}},
+  // fdorg numeric ID fallback
+  {url:'https://api.football-data.org/v4/competitions/2000/matches',type:'fdorg',
+   headers:{'X-Auth-Token':'a6e2d0ce5b074ef5b888f9069eb53074','X-Unfold-Goals':'true'}},
+  // openfootball via allorigins
   {url:'https://api.allorigins.win/raw?url='+encodeURIComponent(OFB),type:'openfootball'},
+  // openfootball via corsproxy
   {url:'https://corsproxy.io/?url='+encodeURIComponent(OFB),type:'openfootball'},
-  {url:'https://thingproxy.freeboard.io/fetch/'+OFB,type:'openfootball'}
+  // openfootball via thingproxy
+  {url:'https://thingproxy.freeboard.io/fetch/'+OFB,type:'openfootball'},
+  // openfootball direct (may work on some devices/networks)
+  {url:OFB,type:'openfootball'}
 ];
 
 function setLiveStatus(state){
@@ -1429,7 +1451,7 @@ function trySource(idx){
       RESULTS_CACHE=norm;LAST_FETCH=Date.now();SOURCE_IDX=idx;
       applyResults(RESULTS_CACHE);setLiveStatus('ok');
     })
-    .catch(function(e){console.log('Source '+idx+' failed:',e.message);trySource(idx+1);});
+    .catch(function(e){console.warn('Source '+idx+' ('+src.url.slice(0,40)+') failed:',e.message);trySource(idx+1);});
 }
 
 function storeMatchData(data){
