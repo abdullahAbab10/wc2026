@@ -387,7 +387,7 @@ html[lang="ar"] .match-venue{text-align:right;}
   <td><span class="time-cell late">01:00 <small>(Sun 15 Jun)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">C</span></td>
 </tr><tr>
-  <td><div class="match-teams">🇭🇹 Haiti <span class="vs">vs</span> 🏴 SCO Scotland</div>
+  <td><div class="match-teams">🇭🇹 Haiti <span class="vs">vs</span> &#127988;&#917607;&#917602;&#917619;&#917603;&#917620;&#917631; Scotland</div>
   <div class="match-venue">📍 Boston · <span class="match-stadium">Gillette Stadium</span></div></td>
   <td><span class="time-cell late">04:00 <small>(Sun 15 Jun)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">C</span></td>
@@ -486,7 +486,7 @@ html[lang="ar"] .match-venue{text-align:right;}
   <td><span class="time-cell">20:00</span></td>
   <td><span class="group-tag">K</span></td>
 </tr><tr>
-  <td><div class="match-teams">🏴 ENG England <span class="vs">vs</span> 🇭🇷 Croatia</div>
+  <td><div class="match-teams">&#127988;&#917607;&#917602;&#917605;&#917614;&#917607;&#917631; England <span class="vs">vs</span> 🇭🇷 Croatia</div>
   <div class="match-venue">📍 Dallas · <span class="match-stadium">AT&amp;T Stadium</span></div></td>
   <td><span class="time-cell">23:00</span></td>
   <td><span class="group-tag">L</span></td>
@@ -533,7 +533,7 @@ html[lang="ar"] .match-venue{text-align:right;}
   <table class="matches-table">
     <thead><tr><th data-key="match">Match &amp; Venue</th><th data-key="time">AST Time</th><th data-key="grp">Grp</th></tr></thead>
     <tbody><tr>
-  <td><div class="match-teams">🏴 SCO Scotland <span class="vs">vs</span> 🇲🇦 Morocco</div>
+  <td><div class="match-teams">&#127988;&#917607;&#917602;&#917619;&#917603;&#917620;&#917631; Scotland <span class="vs">vs</span> 🇲🇦 Morocco</div>
   <div class="match-venue">📍 Boston · <span class="match-stadium">Gillette Stadium</span></div></td>
   <td><span class="time-cell">22:00</span></td>
   <td><span class="group-tag">C</span></td>
@@ -642,7 +642,7 @@ html[lang="ar"] .match-venue{text-align:right;}
   <td><span class="time-cell">20:00</span></td>
   <td><span class="group-tag">K</span></td>
 </tr><tr>
-  <td><div class="match-teams">🏴 ENG England <span class="vs">vs</span> 🇬🇭 Ghana</div>
+  <td><div class="match-teams">&#127988;&#917607;&#917602;&#917605;&#917614;&#917607;&#917631; England <span class="vs">vs</span> 🇬🇭 Ghana</div>
   <div class="match-venue">📍 Boston · <span class="match-stadium">Gillette Stadium</span></div></td>
   <td><span class="time-cell">23:00</span></td>
   <td><span class="group-tag">L</span></td>
@@ -673,7 +673,7 @@ html[lang="ar"] .match-venue{text-align:right;}
   <td><span class="time-cell">22:00</span></td>
   <td><span class="group-tag">B</span></td>
 </tr><tr>
-  <td><div class="match-teams">🏴 SCO Scotland <span class="vs">vs</span> 🇧🇷 Brazil</div>
+  <td><div class="match-teams">&#127988;&#917607;&#917602;&#917619;&#917603;&#917620;&#917631; Scotland <span class="vs">vs</span> 🇧🇷 Brazil</div>
   <div class="match-venue">📍 Miami · <span class="match-stadium">Hard Rock Stadium</span></div></td>
   <td><span class="time-cell late">01:00 <small>(Thu 26 Jun)</small></span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">C</span></td>
@@ -771,7 +771,7 @@ html[lang="ar"] .match-venue{text-align:right;}
   <table class="matches-table">
     <thead><tr><th data-key="match">Match &amp; Venue</th><th data-key="time">AST Time</th><th data-key="grp">Grp</th></tr></thead>
     <tbody><tr>
-  <td><div class="match-teams">🇵🇦 Panama <span class="vs">vs</span> 🏴 ENG England</div>
+  <td><div class="match-teams">🇵🇦 Panama <span class="vs">vs</span> &#127988;&#917607;&#917602;&#917605;&#917614;&#917607;&#917631; England</div>
   <div class="match-venue">📍 New Jersey · <span class="match-stadium">MetLife Stadium</span></div></td>
   <td><span class="time-cell late">00:00</span> <span class="late-badge">🌙 Late</span></td>
   <td><span class="group-tag">L</span></td>
@@ -1176,7 +1176,7 @@ function setLiveStatus(state,extra){
   if(!dot)return;
   if(state==='loading'){dot.className='live-dot';txt.textContent='Fetching scores...';}
   else if(state==='live'){dot.className='live-dot live';txt.innerHTML='<span style="color:#4ADE80">● LIVE</span> — updates every 60s';}
-  else if(state==='ok'){dot.className='live-dot live';txt.textContent='Auto-updates every 5 min'+(extra?' — '+extra:'');}
+  else if(state==='ok'){dot.className='live-dot live';txt.textContent='Live data — auto-refreshes every 5 min';}
   else{dot.className='live-dot error';txt.textContent='Could not load — tap Refresh';}
   if(btn)btn.classList.toggle('spinning',state==='loading');
 }
