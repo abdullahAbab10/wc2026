@@ -237,7 +237,49 @@ html[lang="ar"] .match-venue{text-align:right;}
   html[lang="ar"] .match-venue{text-align:right;}
 }
 @media(max-width:400px){.groups-grid{grid-template-columns:1fr;}.hero-title{font-size:28px;}}
+
+/* ── NEW MOBILE CARD LAYOUT ───────────────────────────── */
+.card-main{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 12px 8px;gap:6px;}
+.card-team{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.card-team-name{font-size:12px;font-weight:700;color:var(--cream);text-align:center;line-height:1.2;}
+.card-team-flag{font-size:28px;line-height:1;}
+.card-center{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px;}
+.card-score{font-family:"Bebas Neue",sans-serif;font-size:34px;letter-spacing:3px;line-height:1;color:var(--gold-hi);}
+.card-score.live{color:#4ADE80;}
+.card-score.upcoming{color:var(--muted);font-size:20px;letter-spacing:1px;}
+.card-ht{font-family:"Barlow Condensed",sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;}
+.card-status{font-family:"Barlow Condensed",sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.card-status.live-status{color:#4ADE80;}
+.card-scorers{display:grid;grid-template-columns:1fr 1px 1fr;border-top:1px solid rgba(200,151,43,0.1);padding:5px 10px 6px;min-height:24px;}
+.card-scorers-divider{background:rgba(200,151,43,0.15);}
+.card-scorer-col{display:flex;flex-direction:column;gap:2px;padding:0 8px;}
+.card-scorer-col.left{text-align:left;align-items:flex-start;}
+.card-scorer-col.right{text-align:right;align-items:flex-end;}
+.card-scorer-item{font-size:10px;color:var(--soft);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;}
+.card-scorer-item .scorer-min{font-family:"Bebas Neue",sans-serif;font-size:10px;color:var(--muted);}
+.card-footer{display:flex;align-items:center;justify-content:space-between;padding:4px 10px 7px;border-top:1px solid rgba(255,255,255,0.04);gap:6px;}
+.card-venue-text{font-size:10px;color:var(--muted);font-style:italic;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-time-tag{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.card-kickoff{font-family:"Bebas Neue",sans-serif;font-size:16px;color:var(--gold-hi);letter-spacing:1px;}
+.card-kickoff.late{color:var(--ember);}
+.card-late-badge{font-size:9px;background:var(--ember-dim);border:1px solid rgba(232,112,42,0.3);color:var(--ember);padding:1px 6px;border-radius:20px;white-space:nowrap;}
+.card-expand{position:absolute;top:8px;right:10px;font-family:"Barlow Condensed",sans-serif;font-size:9px;letter-spacing:1px;color:var(--muted);opacity:0.5;pointer-events:none;}
+.card-expand.open{opacity:1;color:var(--gold);}
+/* DETAIL PANEL CSS */
+.detail-scorers{margin-bottom:12px;}
+.detail-scorers-title{font-family:"Barlow Condensed",sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);margin-bottom:8px;}
+.detail-scorers-row{display:grid;grid-template-columns:1fr 1px 1fr;gap:0;align-items:start;}
+.scorer-divider{background:rgba(200,151,43,0.15);margin:0 8px;}
+.scorer-col{display:flex;flex-direction:column;gap:4px;}
+.home-col{text-align:left;padding-right:8px;}
+.away-col{text-align:right;padding-left:8px;}
+.scorer-entry{font-size:12px;color:var(--text);line-height:1.4;}
+.scorer-min{font-family:"Bebas Neue",sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;}
+.scorer-assist{font-size:10px;color:var(--muted);font-style:italic;}
+.scorer-none{color:var(--muted);font-style:italic;font-size:11px;}
 </style>
+</head>
+<body>
 
 <header class="hero">
   <div class="hero-inner">
@@ -1244,10 +1286,22 @@ function injectScore(row,m){
   // Split flag emoji from name
   function splitFlagName(str){
     str=str.replace(/\u2605/g,'').trim();
-    // Match flag emoji (1-2 regional indicators or tag sequences)
-    var m2=str.match(/^((?:[\uD83C][\uDDE6-\uDDFF]){2}|(?:\uD83C\uDFF4[\uDB40\uDC00-\uDB7F\uDCFF]+\uDB40\uDC7F))\s*(.*)/);
-    if(m2)return{flag:m2[1],name:m2[2].trim()};
-    return{flag:'',name:str.trim()};
+    // Safe flag detection using charCodeAt (no surrogate ranges in regex)
+    var flag='',name=str;
+    if(str.length>=4){
+      var c0=str.charCodeAt(0),c1=str.charCodeAt(1),c2=str.charCodeAt(2),c3=str.charCodeAt(3);
+      // Regional indicator pair: 0xD83C + 0xDDE6-0xDDFF twice = standard country flag
+      if(c0===0xD83C&&c1>=0xDDE6&&c1<=0xDDFF&&c2===0xD83C&&c3>=0xDDE6&&c3<=0xDDFF){
+        flag=str.slice(0,4); name=str.slice(4).trim();
+      }
+      // Tag sequence flag (Scotland/England): starts with 0xD83C 0xDFF4
+      else if(c0===0xD83C&&c1===0xDFF4){
+        var end=str.indexOf('\uDB40\uDC7F');
+        if(end>0){flag=str.slice(0,end+2);name=str.slice(end+2).trim();}
+        else{flag=str.slice(0,4);name=str.slice(4).trim();}
+      }
+    }
+    return{flag:flag,name:name||str.trim()};
   }
   var hTeam=splitFlagName(homePart);
   var aTeam=splitFlagName(awayPart);
@@ -1283,7 +1337,7 @@ function injectScore(row,m){
   }
 
   // Venue text
-  var venueText=venueSrc.replace(/<[^>]+>/g,'').replace(/[\uD83D\uDCCD]/g,'').trim();
+  var venueText=venueSrc.replace(/<[^>]+>/g,'').replace(/[\ud83d\udccd]/g,'').replace(/\ud83d/g,'').replace(/\udccd/g,'').trim();
 
   // Tag
   var tagEl=cells[2]?cells[2].querySelector('.group-tag,.ko-tag'):null;
@@ -1316,7 +1370,8 @@ function injectScore(row,m){
     '<span class="card-expand">\u25be INFO</span>';
 }
 
-var RESULTS_CACHE=null,LAST_FETCH=0,SOURCE_IDX=0,MATCH_DATA={};
+var MATCH_DATA={};
+var RESULTS_CACHE=null,LAST_FETCH=0,SOURCE_IDX=0;
 var API_KEY='a6e2d0ce5b074ef5b888f9069eb53074';
 var OFB='https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
 var SOURCES=[
