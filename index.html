@@ -261,6 +261,56 @@ html[lang="ar"] .match-venue{text-align:right;}
 .card-kickoff{font-family:"Bebas Neue",sans-serif;font-size:16px;color:var(--gold-hi);}
 .card-kickoff.late{color:var(--ember);}
 .card-late-badge{font-size:9px;background:var(--ember-dim);border:1px solid rgba(232,112,42,0.3);color:var(--ember);padding:1px 6px;border-radius:20px;}
+
+.day-tabs-wrap{position:relative;margin:14px 0 18px;}
+.day-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.day-tabs::-webkit-scrollbar{display:none;}
+.day-tab{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 14px;border-radius:10px;border:1px solid rgba(200,151,43,0.18);
+  background:rgba(10,30,20,0.4);cursor:pointer;transition:background .15s,border-color .15s;user-select:none;}
+.day-tab:hover{border-color:rgba(200,151,43,0.4);}
+.day-tab.active{background:rgba(200,151,43,0.16);border-color:var(--gold,#C9952A);}
+.day-tab-dow{font-family:"Barlow Condensed",sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted,#8a9a8e);}
+.day-tab.active .day-tab-dow{color:var(--gold-hi,#F0C84A);}
+.day-tab-date{font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:1px;color:var(--cream,#EDE6D6);line-height:1.1;}
+.day-tab.active .day-tab-date{color:var(--gold-hi,#F0C84A);}
+.day-block{display:none;}
+.day-block.tab-visible{display:block;}
+.groups-toggle-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:12px;margin-bottom:4px;border-radius:10px;border:1px solid rgba(200,151,43,0.25);
+  background:rgba(10,30,20,0.4);color:var(--gold-hi,#F0C84A);font-family:"Barlow Condensed",sans-serif;
+  font-size:14px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;}
+.groups-toggle-btn .arrow{transition:transform .2s;}
+.groups-toggle-btn.open .arrow{transform:rotate(180deg);}
+
+.view-buttons-row{display:flex;gap:10px;margin:16px 0;}
+.view-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 10px;border-radius:10px;border:1px solid rgba(200,151,43,0.25);
+  background:rgba(10,30,20,0.4);color:var(--gold-hi,#F0C84A);font-family:"Barlow Condensed",sans-serif;
+  font-size:13px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
+.view-btn:active{background:rgba(200,151,43,0.18);}
+.modal-overlay{position:fixed;inset:0;background:rgba(5,15,10,0.82);z-index:1000;
+  display:none;align-items:flex-start;justify-content:center;padding:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--bg,#0c1f15);width:100%;max-width:720px;min-height:100vh;
+  border-left:1px solid rgba(200,151,43,0.15);border-right:1px solid rgba(200,151,43,0.15);
+  padding:0 0 40px;position:relative;}
+.modal-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+  padding:16px 16px;background:var(--bg,#0c1f15);border-bottom:1px solid rgba(200,151,43,0.18);}
+.modal-title{font-family:"Cinzel",serif;font-size:18px;color:var(--gold-hi,#F0C84A);}
+.modal-close-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(200,151,43,0.3);
+  background:rgba(200,151,43,0.08);color:var(--gold-hi,#F0C84A);font-size:18px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.modal-body{padding:16px;}
+
+.modal-source{display:none;position:fixed;inset:0;z-index:1000;background:rgba(5,15,10,0.92);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;margin:0;}
+.modal-source.open{display:block;}
+.modal-source .modal-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+  padding:16px;background:var(--bg,#0c1f15);border-bottom:1px solid rgba(200,151,43,0.18);}
+.modal-source .modal-body{padding:16px;max-width:900px;margin:0 auto;}
+body.modal-active{overflow:hidden;}
 </style>
 
 </head>
@@ -284,8 +334,14 @@ html[lang="ar"] .match-venue{text-align:right;}
 <div class="summary-title" id="t-sum-title">About This Guide</div>
 <div class="summary-text" id="t-sum-text">All <strong>104 matches</strong> in <strong>Arabia Standard Time (UTC+3)</strong>. Scores &amp; goalscorers update automatically every 5 minutes.</div>
 </div></div>
-<section class="section">
-<div class="section-header" onclick="toggleSection('s1')"><h2 class="section-title" id="t-s1-title">The Groups</h2><span class="section-note" id="t-s1-note">12 Groups · Top 2 + 8 Best 3rd Advance</span><button class="toggle-btn" id="btn-s1">&#9662;</button></div>
+<div class="view-buttons-row">
+<button class="view-btn" onclick="openModal('groups')"><span id="t-view-groups-btn">View Groups</span></button>
+<button class="view-btn" onclick="openModal('knockout')"><span id="t-view-knockout-btn">View Knockout Stage</span></button>
+</div>
+<section class="section modal-source" id="modalSource-groups">
+<div class="modal-header"><span class="modal-title" id="t-s1-title">The Groups</span><button class="modal-close-btn" onclick="closeModal()">&#10005;</button></div>
+<div class="modal-body">
+<div class="section-note" id="t-s1-note" style="display:block;margin-bottom:12px;">12 Groups · Top 2 + 8 Best 3rd Advance</div>
 <div class="section-body" id="body-s1"><div class="groups-grid"><div class="group-card"><div class="group-header"><span class="group-letter">A</span></div><div class="group-body"><div class="team-row"><span class="team-flag">🇲🇽</span><span class="team-name">Mexico</span></div>
 <div class="team-row"><span class="team-flag">🇰🇷</span><span class="team-name">South Korea</span></div>
 <div class="team-row"><span class="team-flag">🇿🇦</span><span class="team-name">South Africa</span></div>
@@ -334,12 +390,13 @@ html[lang="ar"] .match-venue{text-align:right;}
 <div class="team-row"><span class="team-flag">🇭🇷</span><span class="team-name">Croatia</span></div>
 <div class="team-row"><span class="team-flag">🇬🇭</span><span class="team-name">Ghana</span></div>
 <div class="team-row"><span class="team-flag">🇵🇦</span><span class="team-name">Panama</span></div>
-</div></div></div></div></section>
+</div></div></div></div></div></section>
 <section class="section">
 <div class="section-header" onclick="toggleSection('s2')"><h2 class="section-title" id="t-s2-title">Group Stage Matches</h2><span class="section-note" id="t-s2-note">June 11 – 27 · All times AST</span><button class="toggle-btn" id="btn-s2">&#9662;</button></div>
 <div class="section-body" id="body-s2">
 <div class="live-bar" id="liveBar"><div class="live-status"><div class="live-dot" id="liveDot"></div><span id="liveStatusText">Loading scores...</span></div><button class="refresh-btn" id="refreshBtn" onclick="fetchResults()"><span>&#8635;</span><span id="t-refresh-label">Refresh</span></button></div>
 <div class="legend"><span class="legend-hdr" id="t-legend">Legend</span><div class="legend-item"><div class="legend-dot dot-normal"></div> Normal kick-off</div><div class="legend-item"><div class="legend-dot dot-late"></div> &#127769; Late</div></div>
+<div class="day-tabs-wrap"><div class="day-tabs" id="dayTabs"></div></div>
 <div class="day-block">
   <div class="day-label" data-en="Thursday · June 12 (AST)" data-ar="">Thursday · June 12 (AST)</div>
   <table class="matches-table">
@@ -803,8 +860,10 @@ html[lang="ar"] .match-venue{text-align:right;}
 </tr></tbody>
   </table>
 </div></div></section>
-<section class="section">
-<div class="section-header" onclick="toggleSection('s3')"><h2 class="section-title" id="t-s3-title">Knockout Stage</h2><span class="section-note" id="t-s3-note">June 29 – July 15</span><button class="toggle-btn" id="btn-s3">&#9662;</button></div>
+<section class="section modal-source" id="modalSource-knockout">
+<div class="modal-header"><span class="modal-title" id="t-s3-title">Knockout Stage</span><button class="modal-close-btn" onclick="closeModal()">&#10005;</button></div>
+<div class="modal-body">
+<div class="section-note" id="t-s3-note" style="display:block;margin-bottom:12px;">June 29 – July 15</div>
 <div class="section-body" id="body-s3"><div class="knockout-note"><strong>Note:</strong> All knockout matches in USA only.</div><div class="day-block">
   <div class="day-label" data-en="Sun Jun 29" data-ar="">Sun Jun 29</div>
   <table class="matches-table">
@@ -1056,13 +1115,13 @@ html[lang="ar"] .match-venue{text-align:right;}
   <td><span class="ko-tag ko-3rd">3rd Place</span></td>
 </tr></tbody>
   </table>
-</div></div></section>
+</div></div></div></section>
 <section class="section">
 <div class="section-header" onclick="toggleSection('s4')"><h2 class="section-title" id="t-s4-title">The Final</h2><span class="section-note">July 19, 2026 · New Jersey</span><button class="toggle-btn" id="btn-s4">&#9662;</button></div>
 <div class="section-body" id="body-s4"><div class="final-card"><div class="final-glow"></div><div class="final-content">
 <div class="final-pre">The Greatest Prize in Football</div><div class="final-date">Sunday · 19 July 2026</div>
 <div class="final-title">World Cup Final</div><div class="final-rule"></div>
-<div class="final-time">23:00 AST</div><div class="final-time-note">Arabia Standard Time (UTC+3)</div>
+<div class="final-time">11:00 PM AST</div><div class="final-time-note">Arabia Standard Time (UTC+3)</div>
 <div class="final-venue-name">MetLife Stadium — New Jersey</div>
 </div></div></div></section>
 </div>
@@ -1256,6 +1315,163 @@ function toggleSection(id){
   var c=body.classList.toggle('collapsed');
   if(btn)btn.style.transform=c?'rotate(-90deg)':'rotate(0deg)';
 }
+
+function openModal(which){
+  var el=document.getElementById('modalSource-'+which);
+  if(!el)return;
+  el.classList.add('open');
+  document.body.classList.add('modal-active');
+}
+function closeModal(){
+  var sources=document.querySelectorAll('.modal-source.open');
+  sources.forEach(function(el){el.classList.remove('open');});
+  document.body.classList.remove('modal-active');
+}
+
+// ── Convert all kickoff times from 24h to 12h AM/PM display ─────────────────
+// Runs once on load. Only rewrites the leading "HH:MM" text node inside each
+// .time-cell span; the late-night "(Day Mon DD)" suffix inside <small> and the
+// day-block grouping (which encodes the late-night rule) are left untouched.
+function to12Hour(hhmm){
+  var parts=hhmm.split(':');
+  var h24=parseInt(parts[0],10), m=parts[1];
+  if(isNaN(h24))return hhmm;
+  var period=h24>=12?'PM':'AM';
+  var h12=h24%12;
+  if(h12===0)h12=12;
+  return h12+':'+m+' '+period;
+}
+
+function convertAllTimesTo12Hour(){
+  var cells=document.querySelectorAll('.time-cell');
+  cells.forEach(function(cell){
+    // Find the direct text node (the "HH:MM" part before any <small>)
+    for(var i=0;i<cell.childNodes.length;i++){
+      var node=cell.childNodes[i];
+      if(node.nodeType===3){ // TEXT_NODE
+        var trimmed=node.textContent.trim();
+        var m=trimmed.match(/^(\d{1,2}):(\d{2})$/);
+        if(m){
+          node.textContent=to12Hour(trimmed)+' ';
+          break;
+        }
+      }
+    }
+  });
+}
+
+
+// ── Day Tabs (Group Stage + Knockout Stage, merged chronologically) ─────────
+var DAY_TABS_BUILT=false, ACTIVE_DAY_INDEX=0;
+var MONTH_MAP={Jan:0,January:0,Feb:1,February:1,Mar:2,March:2,Apr:3,April:3,May:4,Jun:5,June:5,
+  Jul:6,July:6,Aug:7,August:7,Sep:8,September:8,Oct:9,October:9,Nov:10,November:10,Dec:11,December:11};
+
+function parseDayLabelDate(raw){
+  // Handles "Thursday · June 12 (AST)" and short form "Sun Jun 29"
+  var m=raw.match(/([A-Za-z]+)\s+(\d{1,2})/);
+  if(!m)return null;
+  var monthName=m[1], day=parseInt(m[2],10);
+  var monthIdx=MONTH_MAP[monthName];
+  if(monthIdx===undefined||isNaN(day))return null;
+  return new Date(2026,monthIdx,day);
+}
+
+function dayLabelDisplay(raw,dateObj){
+  var dow='',dateStr='';
+  var m1=raw.match(/^([A-Za-z]+)\s*\u00b7\s*([A-Za-z]+\s+\d+)/);
+  if(m1){dow=m1[1].slice(0,3);dateStr=m1[2];}
+  else{
+    var m2=raw.match(/^([A-Za-z]{3})\s+([A-Za-z]{3}\s+\d+)/);
+    if(m2){dow=m2[1];dateStr=m2[2];}
+    else{dow=raw.slice(0,3);dateStr=raw;}
+  }
+
+  // Dynamic Today/Tomorrow/Yesterday based on real current date
+  if(dateObj){
+    var now=new Date();
+    var today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    var diffDays=Math.round((dateObj-today)/86400000);
+    if(diffDays===0)return{dow:dow,label:LANG==='ar'?'\u0627\u0644\u064a\u0648\u0645':'Today'};
+    if(diffDays===1)return{dow:dow,label:LANG==='ar'?'\u063a\u062f\u0627':'Tomorrow'};
+    if(diffDays===-1)return{dow:dow,label:LANG==='ar'?'\u0623\u0645\u0633':'Yesterday'};
+  }
+  return{dow:dow,label:dateStr};
+}
+
+function buildDayTabs(){
+  // Merge day-blocks from BOTH group stage (#body-s2) and knockout stage (#body-s3)
+  // in their existing document order, which is already chronological.
+  var blocks=document.querySelectorAll('#body-s2 .day-block, #body-s3 .day-block');
+  if(!blocks.length)return;
+  var wrap=document.getElementById('dayTabs');
+  if(!wrap)return;
+  wrap.innerHTML='';
+
+  var todayIndex=0, now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var bestDiff=Infinity;
+
+  blocks.forEach(function(block,i){
+    var labelEl=block.querySelector('.day-label');
+    if(!labelEl)return;
+    var raw=labelEl.getAttribute('data-en')||labelEl.textContent||'';
+    block.setAttribute('data-day-index',i);
+    block.setAttribute('data-day-raw',raw);
+
+    var dateObj=parseDayLabelDate(raw);
+    if(dateObj){
+      var diff=Math.abs(dateObj-today);
+      if(diff<bestDiff){bestDiff=diff;todayIndex=i;}
+    }
+
+    var disp=dayLabelDisplay(raw,dateObj);
+    var tab=document.createElement('div');
+    tab.className='day-tab';
+    tab.setAttribute('data-day-index',i);
+    tab.setAttribute('data-day-raw',raw);
+    tab.innerHTML='<span class="day-tab-dow">'+disp.dow+'</span><span class="day-tab-date">'+disp.label+'</span>';
+    tab.addEventListener('click',function(){selectDayTab(i);});
+    wrap.appendChild(tab);
+  });
+
+  selectDayTab(todayIndex,true);
+  DAY_TABS_BUILT=true;
+}
+
+function refreshDayTabLabels(){
+  // Re-renders Today/Tomorrow/Yesterday text without rebuilding tabs (used after lang switch or date rollover)
+  var tabs=document.querySelectorAll('.day-tab');
+  tabs.forEach(function(t){
+    var raw=t.getAttribute('data-day-raw')||'';
+    var dateObj=parseDayLabelDate(raw);
+    var disp=dayLabelDisplay(raw,dateObj);
+    var dowEl=t.querySelector('.day-tab-dow'), dateEl=t.querySelector('.day-tab-date');
+    if(dowEl)dowEl.textContent=disp.dow;
+    if(dateEl)dateEl.textContent=disp.label;
+  });
+}
+
+function selectDayTab(index,skipScroll){
+  ACTIVE_DAY_INDEX=index;
+  var blocks=document.querySelectorAll('#body-s2 .day-block, #body-s3 .day-block');
+  blocks.forEach(function(b){
+    var bi=parseInt(b.getAttribute('data-day-index'),10);
+    b.classList.toggle('tab-visible',bi===index);
+  });
+  var tabs=document.querySelectorAll('.day-tab');
+  tabs.forEach(function(t){
+    var ti=parseInt(t.getAttribute('data-day-index'),10);
+    t.classList.toggle('active',ti===index);
+    if(ti===index&&!skipScroll){
+      t.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+    }
+  });
+}
+
+// Re-check Today/Tomorrow/Yesterday labels once per minute in case the date rolls over
+// while the page stays open (e.g. user has the site open across midnight).
+setInterval(function(){if(DAY_TABS_BUILT)refreshDayTabLabels();},60000);
+
+
 function toggleLang(){
   var lang=document.documentElement.getAttribute('lang')==='ar'?'en':'ar';
   document.documentElement.setAttribute('lang',lang);
@@ -1269,9 +1485,13 @@ function toggleLang(){
   var dl=document.querySelectorAll('.day-label');
   for(var i=0;i<dl.length;i++){var d=dl[i];if(!d.getAttribute('data-en'))d.setAttribute('data-en',d.textContent);if(lang==='ar'){var dd=d.getAttribute('data-en');for(var j=0;j<(DAY_EN_AR||[]).length;j++)dd=dd.split(DAY_EN_AR[j][0]).join(DAY_EN_AR[j][1]);d.textContent=dd;}else{d.textContent=d.getAttribute('data-en');}}
   document.title=lang==='ar'?'دليل كأس العالم 2026':'FIFA World Cup 2026 – KSA Guide';
+  if(DAY_TABS_BUILT)refreshDayTabLabels();
+  var vgBtn=document.getElementById('t-view-groups-btn'),vkBtn=document.getElementById('t-view-knockout-btn');
+  if(vgBtn)vgBtn.textContent=lang==='ar'?'عرض المجموعات':'View Groups';
+  if(vkBtn)vkBtn.textContent=lang==='ar'?'عرض دور الإقصاء':'View Knockout Stage';
 }
 
-window.addEventListener('load',function(){fetchResults();});
+window.addEventListener('load',function(){convertAllTimesTo12Hour();buildDayTabs();fetchResults();});
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-LAST_FETCH>60000)fetchResults();});
 
 </script>
