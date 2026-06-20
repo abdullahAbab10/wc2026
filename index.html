@@ -1386,16 +1386,32 @@ function dayLabelDisplay(raw,dateObj){
     else{dow=raw.slice(0,3);dateStr=raw;}
   }
 
-  // Dynamic Today/Tomorrow/Yesterday based on real current date
+  // Dynamic Today/Tomorrow/Yesterday based on real current local date.
+  // Read current language from the DOM (source of truth used elsewhere in this file)
+  // instead of a separate global, to avoid drift between the two.
+  var curLang=document.documentElement.getAttribute('lang')||'en';
   if(dateObj){
-    var now=new Date();
-    var today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    var today=getTodayMatchDayDate();
     var diffDays=Math.round((dateObj-today)/86400000);
-    if(diffDays===0)return{dow:dow,label:LANG==='ar'?'\u0627\u0644\u064a\u0648\u0645':'Today'};
-    if(diffDays===1)return{dow:dow,label:LANG==='ar'?'\u063a\u062f\u0627':'Tomorrow'};
-    if(diffDays===-1)return{dow:dow,label:LANG==='ar'?'\u0623\u0645\u0633':'Yesterday'};
+    if(diffDays===0)return{dow:dow,label:curLang==='ar'?'\u0627\u0644\u064a\u0648\u0645':'Today'};
+    if(diffDays===1)return{dow:dow,label:curLang==='ar'?'\u063a\u062f\u0627':'Tomorrow'};
+    if(diffDays===-1)return{dow:dow,label:curLang==='ar'?'\u0623\u0645\u0633':'Yesterday'};
   }
   return{dow:dow,label:dateStr};
+}
+
+// Returns "today" as a Date, but adjusted for the late-night grouping rule:
+// any time between 00:00-04:59 local belongs to the PREVIOUS calendar day's tab,
+// so "today" for tab-matching purposes must also roll back during that window.
+// This keeps the Today/Tomorrow/Yesterday label consistent with which tab the
+// late-night matches actually live in.
+function getTodayMatchDayDate(){
+  var now=new Date();
+  var d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  if(now.getHours()<5){
+    d.setDate(d.getDate()-1);
+  }
+  return d;
 }
 
 function buildDayTabs(){
@@ -1407,21 +1423,19 @@ function buildDayTabs(){
   if(!wrap)return;
   wrap.innerHTML='';
 
-  var todayIndex=0, now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  var bestDiff=Infinity;
+  // "today" for tab-matching purposes, rolled back during the 12am-4:59am
+  // window so it stays consistent with the late-night grouping rule.
+  var today=getTodayMatchDayDate();
 
+  var dayDates=[]; // parsed Date per block index, parallel to `blocks`
   blocks.forEach(function(block,i){
     var labelEl=block.querySelector('.day-label');
-    if(!labelEl)return;
+    if(!labelEl){dayDates.push(null);return;}
     var raw=labelEl.getAttribute('data-en')||labelEl.textContent||'';
     block.setAttribute('data-day-index',i);
     block.setAttribute('data-day-raw',raw);
-
     var dateObj=parseDayLabelDate(raw);
-    if(dateObj){
-      var diff=Math.abs(dateObj-today);
-      if(diff<bestDiff){bestDiff=diff;todayIndex=i;}
-    }
+    dayDates.push(dateObj);
 
     var disp=dayLabelDisplay(raw,dateObj);
     var tab=document.createElement('div');
@@ -1429,13 +1443,67 @@ function buildDayTabs(){
     tab.setAttribute('data-day-index',i);
     tab.setAttribute('data-day-raw',raw);
     tab.innerHTML='<span class="day-tab-dow">'+disp.dow+'</span><span class="day-tab-date">'+disp.label+'</span>';
-    tab.addEventListener('click',function(){selectDayTab(i);});
+    tab.addEventListener('click',function(){selectDayTab(i,false,true);});
     wrap.appendChild(tab);
   });
 
-  selectDayTab(todayIndex,true);
+  // ── Determine default tab ──────────────────────────────────────────────
+  // Priority: 1) ?day= URL param (exact date match)  2) today's match-day
+  // 3) next upcoming match-day after today  4) final (last) match-day if
+  // the tournament has already finished.
+  var defaultIndex=resolveDefaultDayIndex(dayDates,today);
+
+  selectDayTab(defaultIndex,true,false);
   DAY_TABS_BUILT=true;
 }
+
+// Picks which tab should be open by default, per the priority rules above.
+function resolveDefaultDayIndex(dayDates,today){
+  // 1) Respect an explicit ?day=YYYY-MM-DD (or M/D, Mon-DD, etc via parseDayLabelDate-compatible
+  //    matching) URL parameter if it lines up with a real day-block.
+  var params=new URLSearchParams(window.location.search);
+  var dayParam=params.get('day');
+  if(dayParam){
+    var paramDate=parseFlexibleDate(dayParam);
+    if(paramDate){
+      for(var i=0;i<dayDates.length;i++){
+        if(dayDates[i]&&sameDate(dayDates[i],paramDate))return i;
+      }
+    }
+  }
+
+  // 2) Exact match for today's (late-night-adjusted) date
+  for(var i=0;i<dayDates.length;i++){
+    if(dayDates[i]&&sameDate(dayDates[i],today))return i;
+  }
+
+  // 3) Next upcoming match-day strictly after today
+  var bestFuture=-1, bestFutureDiff=Infinity;
+  for(var i=0;i<dayDates.length;i++){
+    if(!dayDates[i])continue;
+    var diff=dayDates[i]-today;
+    if(diff>0&&diff<bestFutureDiff){bestFutureDiff=diff;bestFuture=i;}
+  }
+  if(bestFuture!==-1)return bestFuture;
+
+  // 4) Tournament already over (today is after every match-day) -> show the final day
+  for(var i=dayDates.length-1;i>=0;i--){
+    if(dayDates[i])return i;
+  }
+  return 0;
+}
+
+function sameDate(a,b){
+  return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+}
+
+// Parses a handful of reasonable ?day= formats: "2026-06-19", "June 19", "Jun 19"
+function parseFlexibleDate(str){
+  var iso=str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(iso)return new Date(parseInt(iso[1],10),parseInt(iso[2],10)-1,parseInt(iso[3],10));
+  return parseDayLabelDate(str);
+}
+
 
 function refreshDayTabLabels(){
   // Re-renders Today/Tomorrow/Yesterday text without rebuilding tabs (used after lang switch or date rollover)
@@ -1450,7 +1518,7 @@ function refreshDayTabLabels(){
   });
 }
 
-function selectDayTab(index,skipScroll){
+function selectDayTab(index,skipScroll,updateUrl){
   ACTIVE_DAY_INDEX=index;
   var blocks=document.querySelectorAll('#body-s2 .day-block, #body-s3 .day-block');
   blocks.forEach(function(b){
@@ -1465,6 +1533,23 @@ function selectDayTab(index,skipScroll){
       t.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
     }
   });
+  // Reflect the selected day in the URL (without reloading) only when the
+  // user explicitly picks a tab, so links/bookmarks can be shared. The
+  // automatic default-selection on page load does NOT rewrite the URL.
+  if(updateUrl){
+    var block=document.querySelector('.day-block[data-day-index="'+index+'"]');
+    if(block){
+      var raw=block.getAttribute('data-day-raw');
+      var d=parseDayLabelDate(raw);
+      if(d&&window.history&&window.history.replaceState){
+        var iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        var params=new URLSearchParams(window.location.search);
+        params.set('day',iso);
+        var newUrl=window.location.pathname+'?'+params.toString();
+        window.history.replaceState(null,'',newUrl);
+      }
+    }
+  }
 }
 
 // Re-check Today/Tomorrow/Yesterday labels once per minute in case the date rolls over
