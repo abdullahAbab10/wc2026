@@ -1379,21 +1379,27 @@ function parseDayLabelDate(raw){
 function dayLabelDisplay(raw,dateObj){
   var dow='',dateStr='';
   var m1=raw.match(/^([A-Za-z]+)\s*\u00b7\s*([A-Za-z]+\s+\d+)/);
-  if(m1){dow=m1[1].slice(0,3);dateStr=m1[2];}
+  if(m1){dateStr=m1[2];}
   else{
     var m2=raw.match(/^([A-Za-z]{3})\s+([A-Za-z]{3}\s+\d+)/);
-    if(m2){dow=m2[1];dateStr=m2[2];}
-    else{dow=raw.slice(0,3);dateStr=raw;}
+    if(m2){dateStr=m2[2];}
+    else{dateStr=raw;}
   }
+  // The weekday WORD is always derived from the parsed Date object, never
+  // from the label text -- the underlying tournament data has some labels
+  // with an incorrect weekday name (e.g. text says "Friday" for a date that
+  // is actually a Saturday). Computing it from the real Date guarantees the
+  // displayed weekday always matches the actual calendar date.
+  dow=dateObj?DOW_SHORT[dateObj.getDay()]:raw.slice(0,3);
 
-  // Dynamic Today/Tomorrow/Yesterday based on real current local date.
-  // Read current language from the DOM (source of truth used elsewhere in this file)
-  // instead of a separate global, to avoid drift between the two.
+  // Dynamic Today/Tomorrow/Yesterday based on real current local date,
+  // compared via clean YYYY-MM-DD keys (never via the visible label text).
   var curLang=document.documentElement.getAttribute('lang')||'en';
   if(dateObj){
     var today=getEffectiveViewingDate();
+    var dateKey=formatDateKey(dateObj), todayKey=formatDateKey(today);
+    if(dateKey===todayKey)return{dow:dow,label:curLang==='ar'?'\u0627\u0644\u064a\u0648\u0645':'Today'};
     var diffDays=Math.round((dateObj-today)/86400000);
-    if(diffDays===0)return{dow:dow,label:curLang==='ar'?'\u0627\u0644\u064a\u0648\u0645':'Today'};
     if(diffDays===1)return{dow:dow,label:curLang==='ar'?'\u063a\u062f\u0627':'Tomorrow'};
     if(diffDays===-1)return{dow:dow,label:curLang==='ar'?'\u0623\u0645\u0633':'Yesterday'};
   }
@@ -1422,6 +1428,52 @@ function getEffectiveViewingDate(){
 // references the old name).
 function getTodayMatchDayDate(){return getEffectiveViewingDate();}
 
+var DOW_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Formats a Date as a clean "YYYY-MM-DD" key. This is the ONLY thing used
+// for date comparisons/matching from here on -- never the visible label text.
+function formatDateKey(d){
+  if(!d)return null;
+  var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+
+var DOW_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var DOW_FULL_AR=['\u0627\u0644\u0623\u062d\u062f','\u0627\u0644\u0627\u062b\u0646\u064a\u0646','\u0627\u0644\u062b\u0644\u0627\u062b\u0627\u0621','\u0627\u0644\u0623\u0631\u0628\u0639\u0627\u0621','\u0627\u0644\u062e\u0645\u064a\u0633','\u0627\u0644\u062c\u0645\u0639\u0629','\u0627\u0644\u0633\u0628\u062a'];
+
+// Builds the corrected full banner text shown inside each .day-block (e.g.
+// "Saturday \u00b7 June 20 (AST)" or short form "Sat Jun 29"), replacing the
+// possibly-wrong static weekday word with one derived from the real Date,
+// and substituting Today/Tomorrow/Yesterday when applicable -- using the
+// SAME effective-viewing-date comparison as the horizontal tab labels, so
+// the two can never disagree.
+function correctDayLabelText(raw,dateObj,dateKey,todayKey){
+  if(!dateObj)return raw;
+  var curLang=document.documentElement.getAttribute('lang')||'en';
+  var isShortForm=/^[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d+$/.test(raw.trim());
+
+  var dowWord;
+  if(dateKey===todayKey){
+    dowWord=curLang==='ar'?'\u0627\u0644\u064a\u0648\u0645':'Today';
+  }else{
+    var diffDays=Math.round((dateObj-new Date(todayKey+'T00:00:00'))/86400000);
+    if(diffDays===1)dowWord=curLang==='ar'?'\u063a\u062f\u0627':'Tomorrow';
+    else if(diffDays===-1)dowWord=curLang==='ar'?'\u0623\u0645\u0633':'Yesterday';
+    else dowWord=curLang==='ar'?DOW_FULL_AR[dateObj.getDay()]:DOW_FULL[dateObj.getDay()];
+  }
+
+  if(isShortForm){
+    // Short form like "Sun Jun 29" -> "Sun" replaced with corrected 3-letter
+    // (or Today/Tomorrow/Yesterday) + the rest of the string kept as-is.
+    var rest=raw.replace(/^[A-Za-z]{3}\s+/,'');
+    var shortDow=(dateKey===todayKey||Math.abs(Math.round((dateObj-new Date(todayKey+'T00:00:00'))/86400000))===1)
+      ?dowWord:DOW_SHORT[dateObj.getDay()];
+    return shortDow+' '+rest;
+  }
+  // Long form like "Thursday \u00b7 June 12 (AST)" -> weekday segment replaced
+  return raw.replace(/^[A-Za-z]+(\s*\u00b7\s*)/,dowWord+'$1');
+}
+
 function buildDayTabs(){
   // Merge day-blocks from BOTH group stage (#body-s2) and knockout stage (#body-s3)
   // in their existing document order, which is already chronological.
@@ -1433,33 +1485,71 @@ function buildDayTabs(){
 
   // "today" for tab-matching purposes, rolled back during the 12am-4:59am
   // window so it stays consistent with the late-night grouping rule.
+  var rawNow=new Date();
   var today=getEffectiveViewingDate();
+  var todayKey=formatDateKey(today);
+
+  console.log('[DayTabs] raw current datetime:',rawNow.toString());
+  console.log('[DayTabs] effective viewing date:',todayKey,'(',today.toDateString(),')');
 
   var dayDates=[]; // parsed Date per block index, parallel to `blocks`
+  var dayKeys=[];  // matching "YYYY-MM-DD" key per block index
+
   blocks.forEach(function(block,i){
     var labelEl=block.querySelector('.day-label');
-    if(!labelEl){dayDates.push(null);return;}
+    if(!labelEl){dayDates.push(null);dayKeys.push(null);return;}
     var raw=labelEl.getAttribute('data-en')||labelEl.textContent||'';
     block.setAttribute('data-day-index',i);
     block.setAttribute('data-day-raw',raw);
+
+    // Parse the date strictly from the month name + day NUMBER in the label.
+    // The weekday WORD in the label text is known to sometimes be wrong in
+    // the underlying data, so it is never trusted for date math -- only used
+    // as a starting point for display, and even then we recompute it below
+    // from the parsed Date itself so the displayed weekday is guaranteed to
+    // match the actual calendar date.
     var dateObj=parseDayLabelDate(raw);
+    var dateKey=formatDateKey(dateObj);
     dayDates.push(dateObj);
+    dayKeys.push(dateKey);
+    block.setAttribute('data-date',dateKey||'');
+
+    // Correct the visible banner text inside the day-block itself (the
+    // "Friday · June 20 (AST)"-style heading shown above that day's
+    // matches). The static source data has some weekday words that don't
+    // match the real calendar date, and this banner was previously left
+    // untouched -- only the small horizontal tab text was being corrected.
+    // We rewrite both the element's live text AND its data-en attribute
+    // (the latter is what toggleLang() uses as the source for Arabic), so
+    // future language switches keep showing the corrected weekday too.
+    if(dateObj&&labelEl){
+      var correctedEn=correctDayLabelText(raw,dateObj,dateKey,todayKey);
+      labelEl.setAttribute('data-en',correctedEn);
+      if((document.documentElement.getAttribute('lang')||'en')!=='ar'){
+        labelEl.textContent=correctedEn;
+      }
+    }
 
     var disp=dayLabelDisplay(raw,dateObj);
     var tab=document.createElement('div');
     tab.className='day-tab';
     tab.setAttribute('data-day-index',i);
     tab.setAttribute('data-day-raw',raw);
+    tab.setAttribute('data-date',dateKey||'');
     tab.innerHTML='<span class="day-tab-dow">'+disp.dow+'</span><span class="day-tab-date">'+disp.label+'</span>';
     tab.addEventListener('click',function(){selectDayTab(i,false,true);});
     wrap.appendChild(tab);
+
+    console.log('[DayTabs] tab',i,'raw label=',JSON.stringify(raw),'-> data-date=',dateKey);
   });
 
   // ── Determine default tab ──────────────────────────────────────────────
-  // Priority: 1) ?day= URL param (exact date match)  2) today's match-day
-  // 3) next upcoming match-day after today  4) final (last) match-day if
-  // the tournament has already finished.
-  var defaultIndex=resolveDefaultDayIndex(dayDates,today);
+  // Priority: 1) ?day= URL param (exact data-date match)  2) today's
+  // effective match-day (exact data-date match)  3) next upcoming match-day
+  // after today  4) final (last) match-day if the tournament has finished.
+  var defaultIndex=resolveDefaultDayIndex(dayKeys,todayKey,dayDates,today);
+  var selectedKey=dayKeys[defaultIndex];
+  console.log('[DayTabs] selected tab index=',defaultIndex,'data-date=',selectedKey);
 
   selectDayTab(defaultIndex,true,false);
   // Defer one more scroll-into-view to the next frame: on first paint the
@@ -1474,24 +1564,25 @@ function buildDayTabs(){
 }
 
 // Picks which tab should be open by default, per the priority rules above.
-function resolveDefaultDayIndex(dayDates,today){
-  // 1) Respect an explicit ?day=YYYY-MM-DD (or M/D, Mon-DD, etc via parseDayLabelDate-compatible
-  //    matching) URL parameter if it lines up with a real day-block.
+// Compares exclusively against the clean "YYYY-MM-DD" data-date keys, never
+// against the visible label text.
+function resolveDefaultDayIndex(dayKeys,todayKey,dayDates,today){
+  // 1) Respect an explicit ?day=YYYY-MM-DD (or flexible date text) URL
+  //    parameter if it lines up with a real day-block's data-date key.
   var params=new URLSearchParams(window.location.search);
   var dayParam=params.get('day');
   if(dayParam){
     var paramDate=parseFlexibleDate(dayParam);
-    if(paramDate){
-      for(var i=0;i<dayDates.length;i++){
-        if(dayDates[i]&&sameDate(dayDates[i],paramDate))return i;
-      }
+    var paramKey=formatDateKey(paramDate);
+    if(paramKey){
+      var idxParam=dayKeys.indexOf(paramKey);
+      if(idxParam!==-1)return idxParam;
     }
   }
 
-  // 2) Exact match for today's (late-night-adjusted) date
-  for(var i=0;i<dayDates.length;i++){
-    if(dayDates[i]&&sameDate(dayDates[i],today))return i;
-  }
+  // 2) Exact match for today's (late-night-adjusted) data-date key
+  var idxToday=dayKeys.indexOf(todayKey);
+  if(idxToday!==-1)return idxToday;
 
   // 3) Next upcoming match-day strictly after today
   var bestFuture=-1, bestFutureDiff=Infinity;
@@ -1502,15 +1593,11 @@ function resolveDefaultDayIndex(dayDates,today){
   }
   if(bestFuture!==-1)return bestFuture;
 
-  // 4) Tournament already over (today is after every match-day) -> show the final day
+  // 4) Tournament already over (today is after every match-day) -> final day
   for(var i=dayDates.length-1;i>=0;i--){
     if(dayDates[i])return i;
   }
   return 0;
-}
-
-function sameDate(a,b){
-  return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
 }
 
 // Parses a handful of reasonable ?day= formats: "2026-06-19", "June 19", "Jun 19"
@@ -1526,6 +1613,8 @@ function refreshDayTabLabels(){
   var tabs=document.querySelectorAll('.day-tab');
   tabs.forEach(function(t){
     var raw=t.getAttribute('data-day-raw')||'';
+    // Re-derive the Date from the raw label's month/day (not the weekday word,
+    // which is not trusted), same as buildDayTabs did originally.
     var dateObj=parseDayLabelDate(raw);
     var disp=dayLabelDisplay(raw,dateObj);
     var dowEl=t.querySelector('.day-tab-dow'), dateEl=t.querySelector('.day-tab-date');
@@ -1561,12 +1650,10 @@ function selectDayTab(index,skipScroll,updateUrl){
   if(updateUrl){
     var block=document.querySelector('.day-block[data-day-index="'+index+'"]');
     if(block){
-      var raw=block.getAttribute('data-day-raw');
-      var d=parseDayLabelDate(raw);
-      if(d&&window.history&&window.history.replaceState){
-        var iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      var dateKey=block.getAttribute('data-date');
+      if(dateKey&&window.history&&window.history.replaceState){
         var params=new URLSearchParams(window.location.search);
-        params.set('day',iso);
+        params.set('day',dateKey);
         var newUrl=window.location.pathname+'?'+params.toString();
         window.history.replaceState(null,'',newUrl);
       }
@@ -1590,7 +1677,27 @@ function toggleLang(){
   var tc=document.querySelectorAll('.match-teams');
   for(var i=0;i<tc.length;i++){var t=tc[i];if(!t.getAttribute('data-en'))t.setAttribute('data-en',t.innerHTML);if(lang==='ar'){var h2=t.getAttribute('data-en');for(var j=0;j<(COUNTRY_EN_AR||[]).length;j++){h2=h2.split(COUNTRY_EN_AR[j][0]).join(COUNTRY_EN_AR[j][1]);}h2=h2.split('>vs<').join('>ضد<');t.innerHTML=h2;}else{t.innerHTML=t.getAttribute('data-en');}}
   var dl=document.querySelectorAll('.day-label');
-  for(var i=0;i<dl.length;i++){var d=dl[i];if(!d.getAttribute('data-en'))d.setAttribute('data-en',d.textContent);if(lang==='ar'){var dd=d.getAttribute('data-en');for(var j=0;j<(DAY_EN_AR||[]).length;j++)dd=dd.split(DAY_EN_AR[j][0]).join(DAY_EN_AR[j][1]);d.textContent=dd;}else{d.textContent=d.getAttribute('data-en');}}
+  for(var i=0;i<dl.length;i++){
+    var d=dl[i];
+    if(!d.getAttribute('data-en'))d.setAttribute('data-en',d.textContent);
+    var block=d.closest?d.closest('.day-block'):null;
+    var dateKeyAttr=block?block.getAttribute('data-date'):null;
+    if(dateKeyAttr){
+      // Re-run the same correction used on initial load, in the NEW
+      // language, so the weekday/Today-Tomorrow-Yesterday text is correct
+      // in both English and Arabic after switching.
+      var rawSource=d.getAttribute('data-en');
+      var dObj=new Date(dateKeyAttr+'T00:00:00');
+      var todayK=formatDateKey(getEffectiveViewingDate());
+      d.textContent=correctDayLabelText(rawSource,dObj,dateKeyAttr,todayK);
+    }else if(lang==='ar'){
+      var dd=d.getAttribute('data-en');
+      for(var j=0;j<(DAY_EN_AR||[]).length;j++)dd=dd.split(DAY_EN_AR[j][0]).join(DAY_EN_AR[j][1]);
+      d.textContent=dd;
+    }else{
+      d.textContent=d.getAttribute('data-en');
+    }
+  }
   document.title=lang==='ar'?'دليل كأس العالم 2026':'FIFA World Cup 2026 – KSA Guide';
   if(DAY_TABS_BUILT)refreshDayTabLabels();
   var vgBtn=document.getElementById('t-view-groups-btn'),vkBtn=document.getElementById('t-view-knockout-btn');
