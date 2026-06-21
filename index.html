@@ -1391,7 +1391,7 @@ function dayLabelDisplay(raw,dateObj){
   // instead of a separate global, to avoid drift between the two.
   var curLang=document.documentElement.getAttribute('lang')||'en';
   if(dateObj){
-    var today=getTodayMatchDayDate();
+    var today=getEffectiveViewingDate();
     var diffDays=Math.round((dateObj-today)/86400000);
     if(diffDays===0)return{dow:dow,label:curLang==='ar'?'\u0627\u0644\u064a\u0648\u0645':'Today'};
     if(diffDays===1)return{dow:dow,label:curLang==='ar'?'\u063a\u062f\u0627':'Tomorrow'};
@@ -1400,12 +1400,17 @@ function dayLabelDisplay(raw,dateObj){
   return{dow:dow,label:dateStr};
 }
 
-// Returns "today" as a Date, but adjusted for the late-night grouping rule:
-// any time between 00:00-04:59 local belongs to the PREVIOUS calendar day's tab,
-// so "today" for tab-matching purposes must also roll back during that window.
-// This keeps the Today/Tomorrow/Yesterday label consistent with which tab the
-// late-night matches actually live in.
-function getTodayMatchDayDate(){
+// ── Single shared "effective viewing date" function ─────────────────────────
+// Both the Today/Tomorrow/Yesterday label logic (dayLabelDisplay) and the
+// default-tab selection logic (resolveDefaultDayIndex, via buildDayTabs) call
+// this SAME function, so they can never disagree with each other.
+//
+// Rule: take the user's current local date/time. If the local clock time is
+// before 5:00 AM, the "effective" viewing date is the PREVIOUS calendar day
+// (matches between 12:00 AM-4:59 AM are still considered part of the prior
+// night's schedule, matching the late-night day-block grouping already baked
+// into the HTML). Otherwise the effective date is just today's calendar date.
+function getEffectiveViewingDate(){
   var now=new Date();
   var d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   if(now.getHours()<5){
@@ -1413,6 +1418,9 @@ function getTodayMatchDayDate(){
   }
   return d;
 }
+// Backward-compatible alias (kept in case anything else in this file still
+// references the old name).
+function getTodayMatchDayDate(){return getEffectiveViewingDate();}
 
 function buildDayTabs(){
   // Merge day-blocks from BOTH group stage (#body-s2) and knockout stage (#body-s3)
@@ -1425,7 +1433,7 @@ function buildDayTabs(){
 
   // "today" for tab-matching purposes, rolled back during the 12am-4:59am
   // window so it stays consistent with the late-night grouping rule.
-  var today=getTodayMatchDayDate();
+  var today=getEffectiveViewingDate();
 
   var dayDates=[]; // parsed Date per block index, parallel to `blocks`
   blocks.forEach(function(block,i){
@@ -1454,6 +1462,14 @@ function buildDayTabs(){
   var defaultIndex=resolveDefaultDayIndex(dayDates,today);
 
   selectDayTab(defaultIndex,true,false);
+  // Defer one more scroll-into-view to the next frame: on first paint the
+  // tab bar may not have its final layout/scroll width yet (fonts/webfonts
+  // still loading, etc.), which can make scrollIntoView silently no-op.
+  // Re-running it after layout settles guarantees the active tab is centered.
+  requestAnimationFrame(function(){
+    var activeTab=document.querySelector('.day-tab.active');
+    if(activeTab)activeTab.scrollIntoView({behavior:'auto',inline:'center',block:'nearest'});
+  });
   DAY_TABS_BUILT=true;
 }
 
@@ -1529,8 +1545,14 @@ function selectDayTab(index,skipScroll,updateUrl){
   tabs.forEach(function(t){
     var ti=parseInt(t.getAttribute('data-day-index'),10);
     t.classList.toggle('active',ti===index);
-    if(ti===index&&!skipScroll){
-      t.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+    if(ti===index){
+      // Always bring the active tab into view, even on the initial automatic
+      // selection. `skipScroll` only controls the animation (instant on first
+      // load so the page doesn't visibly "slide" the tab bar on open; smooth
+      // when the user taps a different tab) -- it must never skip scrolling
+      // entirely, or the bar stays pinned at the first tab while a different
+      // tab is marked active underneath.
+      t.scrollIntoView({behavior:skipScroll?'auto':'smooth',inline:'center',block:'nearest'});
     }
   });
   // Reflect the selected day in the URL (without reloading) only when the
