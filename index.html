@@ -58,7 +58,7 @@ html[lang="ar"] .lang-toggle{flex-direction:row-reverse;}
 .group-header{background:linear-gradient(90deg,rgba(30,84,64,0.9) 0%,rgba(20,66,48,0.7) 100%);border-bottom:1px solid var(--rule);padding:9px 14px;}
 .group-letter{font-family:"Cinzel",serif;font-size:22px;font-weight:700;color:var(--gold-hi);letter-spacing:1px;line-height:1;}
 .group-body{padding:4px 0;}
-.team-row{display:flex;align-items:center;gap:9px;padding:6px 14px;border-bottom:1px solid rgba(255,255,255,0.035);transition:background 0.15s;}
+.team-row{display:none;}
 .team-row:last-child{border-bottom:none;}
 .team-row:hover{background:rgba(240,200,74,0.04);}
 .team-row.ksa{background:rgba(200,151,43,0.07);}
@@ -312,6 +312,18 @@ html[lang="ar"] .match-venue{text-align:right;}
   padding:16px;background:var(--bg,#0c1f15);border-bottom:1px solid rgba(200,151,43,0.18);}
 .modal-source .modal-body{padding:16px;max-width:900px;margin:0 auto;}
 body.modal-active{overflow:hidden;}
+.standings-container{padding:10px 14px 12px;}
+.standings-table{width:100%;border-collapse:collapse;font-size:11px;}
+.standings-table th{font-family:"Barlow Condensed",sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:center;padding:4px 2px;border-bottom:1px solid var(--rule);font-weight:600;}
+.standings-table th.st-team{text-align:left;}
+.standings-table td{text-align:center;padding:5px 2px;color:var(--cream);border-bottom:1px solid rgba(255,255,255,0.04);}
+.standings-table .st-rank{font-family:"Bebas Neue",sans-serif;font-size:13px;color:var(--muted);width:18px;}
+.standings-table .st-team{text-align:left;font-weight:600;color:var(--gold-hi);white-space:nowrap;font-size:11px;}
+.standings-table .st-pts{font-weight:700;color:var(--gold-hi);}
+.standings-table tr.st-qualify .st-rank{color:#4ADE80;}
+.standings-table tr.st-qualify{background:rgba(74,222,128,0.05);}
+.standings-table tr.st-thirdplace .st-rank{color:var(--gold);}
+.standings-table tr.st-thirdplace{background:rgba(200,151,43,0.05);}
 </style>
 
 </head>
@@ -1321,6 +1333,10 @@ function processResults(data){
     MATCH_DATA[normTeam(m.team2)+'_'+normTeam(m.team1)]=m;
   });
   applyResults(data.matches);
+  // Keep group standings in sync with the latest results. Cheap to run even
+  // when the Groups modal is closed (just a DOM update inside hidden nodes),
+  // and guarantees standings are already current the moment someone opens it.
+  refreshAllGroupStandings();
   setLiveStatus(hasLive?'live':'ok',ago);
   scheduleNext(hasLive);
 }
@@ -1360,11 +1376,187 @@ function toggleSection(id){
   if(btn)btn.style.transform=c?'rotate(-90deg)':'rotate(0deg)';
 }
 
+// ── Group Standings (computed dynamically from live match results) ──────────
+// GROUP_MATCHES: group letter -> array of {team1, team2} as they appear in
+// the schedule table's own group-tag rows. Built once from the existing DOM
+// (the schedule table is the single source of truth for which match belongs
+// to which group), so this never needs separate/duplicated data.
+var GROUP_MATCHES=null, GROUP_TEAMS_ORDER=null;
+
+// Strips a leading flag emoji (regional-indicator pair or tag-sequence flag
+// like Scotland/England) from a team-name string, leaving just the plain
+// name (e.g. "🇲🇽 Mexico" -> "Mexico"). Same technique already used by
+// injectScore()'s local extractTeam() helper, duplicated here as a small
+// standalone function since that one is private to injectScore's closure.
+function stripTeamFlag(str){
+  str=(str||'').replace(/<[^>]+>/g,'').replace(/\u2605/g,'').trim();
+  if(str.length>=4){
+    var c0=str.charCodeAt(0),c1=str.charCodeAt(1),c2=str.charCodeAt(2),c3=str.charCodeAt(3);
+    if(c0===0xD83C&&c1>=0xDDE6&&c1<=0xDDFF&&c2===0xD83C&&c3>=0xDDE6&&c3<=0xDDFF){
+      return str.slice(4).trim();
+    }
+    if(c0===0xD83C&&c1===0xDFF4){
+      var te=str.length-2;
+      while(te>0&&!(str.charCodeAt(te)===0xDB40&&str.charCodeAt(te+1)===0xDC7F))te--;
+      if(te>0)return str.slice(te+2).trim();
+      return str.slice(4).trim();
+    }
+  }
+  return str;
+}
+
+function buildGroupMatchIndex(){
+  if(GROUP_MATCHES)return; // build once
+  GROUP_MATCHES={};
+  GROUP_TEAMS_ORDER={};
+  var rows=document.querySelectorAll('#body-s2 .matches-table tr');
+  rows.forEach(function(row){
+    var tagEl=row.querySelector('.group-tag');
+    if(!tagEl)return; // knockout rows have no group-tag
+    var grp=tagEl.textContent.trim();
+    var teamsEl=row.querySelector('.match-teams');
+    if(!teamsEl)return;
+    var raw=teamsEl.getAttribute('data-en')||teamsEl.textContent||'';
+    var parts=raw.split(/\bvs\b/i);
+    if(parts.length<2)return;
+    var t1=stripTeamFlag(parts[0]);
+    var t2=stripTeamFlag(parts[1]);
+    if(!GROUP_MATCHES[grp])GROUP_MATCHES[grp]=[];
+    GROUP_MATCHES[grp].push({team1:t1,team2:t2});
+  });
+
+  // Preserve each group's official team order from the existing group-card
+  // listing (used as the stable final tiebreaker and as the starting list
+  // for groups that haven't played any matches yet).
+  var cards=document.querySelectorAll('#body-s1 .group-card');
+  cards.forEach(function(card){
+    var letterEl=card.querySelector('.group-letter');
+    if(!letterEl)return;
+    var grp=letterEl.textContent.trim();
+    var names=[];
+    // Strip the host-nation ★ star marker (e.g. "Saudi Arabia ★") so this
+    // name matches the star-stripped team names already produced by
+    // stripTeamFlag() above for GROUP_MATCHES -- otherwise the host team's
+    // own matches would never be found in the standings lookup.
+    card.querySelectorAll('.team-name').forEach(function(n){names.push(n.textContent.replace(/★/g,'').trim());});
+    GROUP_TEAMS_ORDER[grp]=names;
+  });
+}
+
+// Looks up a match's live result from MATCH_DATA using the same normTeam()
+// keying the rest of the site already relies on for score matching.
+function findGroupMatchResult(t1,t2){
+  var k1=normTeam(t1)+'_'+normTeam(t2);
+  var k2=normTeam(t2)+'_'+normTeam(t1);
+  return MATCH_DATA[k1]||MATCH_DATA[k2]||null;
+}
+
+// Computes the standings table for one group: P/W/D/L/GF/GA/GD/Pts per team,
+// sorted by points -> goal difference -> goals scored -> stable original order.
+function computeGroupStandings(grp){
+  var order=(GROUP_TEAMS_ORDER&&GROUP_TEAMS_ORDER[grp])||[];
+  var stats={};
+  order.forEach(function(name,idx){
+    stats[name]={team:name,origIndex:idx,P:0,W:0,D:0,L:0,GF:0,GA:0,GD:0,Pts:0};
+  });
+
+  var matches=(GROUP_MATCHES&&GROUP_MATCHES[grp])||[];
+  matches.forEach(function(m){
+    var result=findGroupMatchResult(m.team1,m.team2);
+    if(!result||!result.score)return; // not played yet
+    var ft=result.score.ft||result.score;
+    if(!ft||ft[0]===null||ft[0]===undefined)return;
+    var isReversed=normTeam(result.team1||'')===normTeam(m.team2);
+    var gHome=isReversed?ft[1]:ft[0];
+    var gAway=isReversed?ft[0]:ft[1];
+
+    var s1=stats[m.team1], s2=stats[m.team2];
+    if(!s1||!s2)return; // safety: team name didn't match the group's roster
+
+    s1.P++; s2.P++;
+    s1.GF+=gHome; s1.GA+=gAway;
+    s2.GF+=gAway; s2.GA+=gHome;
+    if(gHome>gAway){s1.W++;s1.Pts+=3;s2.L++;}
+    else if(gHome<gAway){s2.W++;s2.Pts+=3;s1.L++;}
+    else{s1.D++;s2.D++;s1.Pts++;s2.Pts++;}
+  });
+
+  var list=order.map(function(name){
+    var s=stats[name];
+    s.GD=s.GF-s.GA;
+    return s;
+  });
+
+  list.sort(function(a,b){
+    if(b.Pts!==a.Pts)return b.Pts-a.Pts;
+    if(b.GD!==a.GD)return b.GD-a.GD;
+    if(b.GF!==a.GF)return b.GF-a.GF;
+    return a.origIndex-b.origIndex; // stable fallback: original group-card order
+  });
+
+  return list;
+}
+
+function renderStandingsTable(grp){
+  var rows=computeGroupStandings(grp);
+  var html='<table class="standings-table"><thead><tr>'+
+    '<th class="st-rank">#</th><th class="st-team">Team</th>'+
+    '<th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th>'+
+    '</tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    var rankCls=i<2?'st-qualify':(i===2?'st-thirdplace':'');
+    html+='<tr class="'+rankCls+'">'+
+      '<td class="st-rank">'+(i+1)+'</td>'+
+      '<td class="st-team">'+(TEAM_FLAGS&&TEAM_FLAGS[r.team]?TEAM_FLAGS[r.team]+' ':'')+r.team+'</td>'+
+      '<td>'+r.P+'</td><td>'+r.W+'</td><td>'+r.D+'</td><td>'+r.L+'</td>'+
+      '<td>'+r.GF+'</td><td>'+r.GA+'</td><td>'+(r.GD>0?'+':'')+r.GD+'</td>'+
+      '<td class="st-pts">'+r.Pts+'</td>'+
+    '</tr>';
+  });
+  html+='</tbody></table>';
+  return html;
+}
+
+function refreshAllGroupStandings(){
+  buildGroupMatchIndex();
+  buildTeamFlagIndex();
+  var cards=document.querySelectorAll('#body-s1 .group-card');
+  cards.forEach(function(card){
+    var letterEl=card.querySelector('.group-letter');
+    if(!letterEl)return;
+    var grp=letterEl.textContent.trim();
+    var container=card.querySelector('.standings-container');
+    if(!container){
+      container=document.createElement('div');
+      container.className='standings-container';
+      card.querySelector('.group-body').appendChild(container);
+    }
+    container.innerHTML=renderStandingsTable(grp);
+  });
+}
+
+// Lightweight team-name -> flag lookup reused for the standings table, built
+// from the same group-card markup (so no separate data source is needed).
+var TEAM_FLAGS=null;
+function buildTeamFlagIndex(){
+  if(TEAM_FLAGS)return;
+  TEAM_FLAGS={};
+  document.querySelectorAll('#body-s1 .team-row').forEach(function(row){
+    var flagEl=row.querySelector('.team-flag'), nameEl=row.querySelector('.team-name');
+    // Strip the host-nation ★ star here too, to stay consistent with the
+    // star-stripped names used as keys throughout the standings computation.
+    if(flagEl&&nameEl)TEAM_FLAGS[nameEl.textContent.replace(/★/g,'').trim()]=flagEl.textContent.trim();
+  });
+}
+
 function openModal(which){
   var el=document.getElementById('modalSource-'+which);
   if(!el)return;
   el.classList.add('open');
   document.body.classList.add('modal-active');
+  if(which==='groups'){
+    refreshAllGroupStandings(); // builds team-flag/group-match indexes internally if needed
+  }
 }
 function closeModal(){
   var sources=document.querySelectorAll('.modal-source.open');
